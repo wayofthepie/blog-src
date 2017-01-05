@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>My Hakyll Blog - Installing NixOs</title>
+    <link rel="stylesheet" href="../css/syntax.css">
+    <link rel="stylesheet" href="../css/fluff.css">
+    <link rel="stylesheet" href="../css/fix.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-social/5.1.1/bootstrap-social.min.css" crossorigin="anonymous">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+</head>
+<body>
+<div id="header">
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">
+                    <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+                </a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li class="inactive"><a href="../index.html">Home</a></li>
+                    <li class="inactive"><a href="../about.html">About</a></li>
+                    <li class="inactive"><a href="../contact.html">Contact</a></li>
+                    <li class="inactive"><a href="../archive.html">Archives</a></li>
+
+                </ul>
+            </div><!--/.nav-collapse -->
+        </div>
+    </nav>
+</div>
+
+<div class="container theme-showcase" role="main">
+    <div id="content">
+        <div class="page-header">
+            <h1>Installing NixOs</h1>
+        </div>
+        <div class="info">
+    Posted on July 10, 2016
+    
+</div>
+
+<h1 id="introduction">Introduction</h1>
+<p>I’ve recently started diving into <em><a href="https://nixos.org/nix/">Nix</a></em> and <em><a href="https://nixos.org/">NixOS</a></em>. <strong>Nix</strong> is a package manager for Linux/Unix systems, a quick description from its own site:</p>
+<blockquote>
+<p>Nix’s purely functional approach ensures that installing or upgrading one package cannot break other packages. This is because it won’t overwrite dependencies with newer versions that might cause breakage elsewhere. It allows you to roll back to previous versions, and ensures that no package is in an inconsistent state during an upgrade.</p>
+</blockquote>
+<p><strong>NixOs</strong> is an operating system which takes a declarative approach to configuration and package management and uses Nix as its package manager. Following is an example of creating a user on a NixOS system:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">...</span>
+users<span class="fu">.</span>extraUsers<span class="fu">.</span>alice <span class="fu">=</span>
+  { isNormalUser <span class="fu">=</span> true;
+    home <span class="fu">=</span> <span class="st">&quot;/home/alice&quot;</span>;
+    extraGroups <span class="fu">=</span> [ <span class="st">&quot;wheel&quot;</span> ];
+  };
+security<span class="fu">.</span>sudo<span class="fu">.</span>enable <span class="fu">=</span> true;
+<span class="fu">...</span></code></pre></div>
+<p>An example of a fully configured NixOS system can be found at <a href="https://github.com/wayofthepie/sky" class="uri">https://github.com/wayofthepie/sky</a>, this is the configuration I’m currently using for my desktop.</p>
+<p>In this post I’m going to run through how I installed NixOs, with the aim of helping anyone new to NixOs through the installation process. Throughout the post I will be assuming the following:</p>
+<ul>
+<li>The NixOS install CD or USB installer - see <a href="https://nixos.org/nixos/manual/index.html#sec-installation" class="uri">https://nixos.org/nixos/manual/index.html#sec-installation</a>.</li>
+<li>An empty disk.</li>
+<li>Boot with UEFI.</li>
+</ul>
+<p>These are not requirements, but will make the post easier to follow.</p>
+<h1 id="partition">Partition</h1>
+<p>Let’s start! First boot into NixOs, whether from USB or the CD installer, and find the disk you wish to install onto. I will use <strong>/dev/sda</strong> in this post, you can replace this with whatever disk you are going to use.</p>
+<p>The system will boot with UEFI so <strong>gdisk</strong> should be used to create the partitions. This will create a GPT (GUID Partition Table) formatted disk.</p>
+<p>With <strong>gdisk</strong> create the following partitions:</p>
+<table class="table table-striped">
+<thead>
+<tr class="header">
+<th>Partition</th>
+<th>Size</th>
+<th>Type</th>
+<th>Code</th>
+<th>Filesystem</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>/dev/sda1</td>
+<td>2 MiB</td>
+<td><em>Bios Boot Partition</em></td>
+<td>ef02</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td>/dev/sda2</td>
+<td>1024 MiB</td>
+<td><em>EFI</em></td>
+<td>ef00</td>
+<td>vfat</td>
+</tr>
+<tr class="odd">
+<td>/dev/sda3</td>
+<td>119 GiB</td>
+<td><em>Linux LVM</em></td>
+<td>8e00</td>
+<td>xfs</td>
+</tr>
+</tbody>
+</table>
+<p>If you have never used <strong>gdisk</strong> before, fear not! Just run <code class="sourceCode bash"><span class="ex">gdisk</span> /dev/sda</code> and answer the questions as outlined in the next section. If you know what you are doing, you can skip the next section.</p>
+<h2 id="creating-partitions-with-gdisk">Creating Partitions With gdisk</h2>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">gdisk</span> /dev/sda
+
+<span class="ex">GPT</span> fdisk (gdisk) <span class="ex">version</span> 1.0.1
+
+<span class="ex">Partition</span> table scan:
+  <span class="ex">MBR</span>: not present
+  <span class="ex">BSD</span>: not present
+  <span class="ex">APM</span>: not present
+  <span class="ex">GPT</span>: not present
+
+<span class="ex">Creating</span> new GPT entries.
+
+<span class="ex">Command</span> (? for help)<span class="bu">:</span> n
+<span class="ex">Partition</span> number (1-128, default 1)<span class="bu">:</span> 1
+<span class="ex">First</span> sector (34-251658206, default = 2048) <span class="ex">or</span> <span class="dt">{+-}size{KMGTP}</span>: 
+<span class="ex">Last</span> sector (2048-251658206, default = 251658206) <span class="ex">or</span> <span class="dt">{+-}size{KMGTP}</span>: +2M
+<span class="ex">Current</span> type is <span class="st">'Linux filesystem'</span>
+<span class="ex">Hex</span> code or GUID (L to show codes, Enter = 8300)<span class="bu">:</span> ef02
+<span class="ex">Changed</span> type of partition to <span class="st">'BIOS boot partition'</span>
+
+<span class="ex">Command</span> (? for help)<span class="bu">:</span> n
+<span class="ex">Partition</span> number (2-128, default 2)<span class="bu">:</span> 
+<span class="ex">First</span> sector (34-251658206, default = 6144) <span class="ex">or</span> <span class="dt">{+-}size{KMGTP}</span>: 
+<span class="ex">Last</span> sector (6144-251658206, default = 251658206) <span class="ex">or</span> <span class="dt">{+-}size{KMGTP}</span>: +1G
+<span class="ex">Current</span> type is <span class="st">'Linux filesystem'</span>
+<span class="ex">Hex</span> code or GUID (L to show codes, Enter = 8300)<span class="bu">:</span> ef00
+<span class="ex">Changed</span> type of partition to <span class="st">'EFI System'</span>
+
+<span class="ex">Command</span> (? for help)<span class="bu">:</span> n
+<span class="ex">Partition</span> number (3-128, default 3)<span class="bu">:</span> 
+<span class="ex">First</span> sector (34-251658206, default = 2103296) <span class="ex">or</span> <span class="dt">{+-}size{KMGTP}</span>: 
+<span class="ex">Last</span> sector (2103296-251658206, default = 251658206) <span class="ex">or</span> <span class="dt">{+-}size{KMGTP}</span>: 
+<span class="ex">Current</span> type is <span class="st">'Linux filesystem'</span>
+<span class="ex">Hex</span> code or GUID (L to show codes, Enter = 8300)<span class="bu">:</span> 8e00
+<span class="ex">Changed</span> type of partition to <span class="st">'Linux LVM'</span>
+
+<span class="ex">Command</span> (? for help)<span class="bu">:</span> w
+
+<span class="ex">Final</span> checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
+<span class="ex">PARTITIONS</span>!!
+
+<span class="ex">Do</span> you want to proceed? (Y/N)<span class="bu">:</span> y
+<span class="ex">OK</span><span class="kw">;</span> <span class="ex">writing</span> new GUID partition table (GPT) <span class="ex">to</span> /dev/sda.
+<span class="ex">The</span> operation has completed successfully.</code></pre></div>
+<p>In the above, we begin creating our first new partition by using the command <strong>n</strong> when asked the question <code class="sourceCode bash"><span class="ex">Command</span> (? for help)<span class="bu">:</span></code>.</p>
+<p>The first question we are asked is what number we would like to give, it’s our first partition so <strong>1</strong>, this will create a partition called <strong>/dev/sda1</strong> on <strong>/dev/sda</strong>.</p>
+<p>Next, we are asked what sector to start on and what sector to end on. The starting sector can be left empty - this means start at next unused sector, which in this case is the start of the disk. As for which sector to end on, here we answer <strong>+2M</strong> which will means <em>move 2 Mebibytes <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> (<strong>MiB</strong>) forward from the starting sector</em>, giving us a partition size of 2 Mebibytes.</p>
+<p>Finally, we are asked if we want to change the type of the partition. Our first partition should have the type <strong>ef02</strong>, more on why later.</p>
+<p>That’s the first partition created, it should be clear now how the next two are created.</p>
+<h2 id="notes-on-the-partitions">Notes On The Partitions</h2>
+<p>Done? Good, to get a look at the disk layout run <code class="sourceCode bash"><span class="ex">gdisk</span> -l /dev/sda</code>, this should print out the following:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">gdisk</span> -l /dev/sda
+
+<span class="ex">GPT</span> fdisk (gdisk) <span class="ex">version</span> 1.0.1
+
+<span class="ex">Partition</span> table scan:
+  <span class="ex">MBR</span>: protective
+  <span class="ex">BSD</span>: not present
+  <span class="ex">APM</span>: not present
+  <span class="ex">GPT</span>: present
+
+<span class="ex">Found</span> valid GPT with protective MBR<span class="kw">;</span> <span class="ex">using</span> GPT.
+<span class="ex">Disk</span> /dev/sda: 251658240 sectors, 120.0 GiB
+<span class="ex">Logical</span> sector size: 512 bytes
+<span class="ex">Disk</span> identifier (GUID)<span class="bu">:</span> 031652EE-C219-4EFB-84AB-9E310B14357E
+<span class="ex">Partition</span> table holds up to 128 entries
+<span class="ex">First</span> usable sector is 34, last usable sector is 251658206
+<span class="ex">Partitions</span> will be aligned on 2048-sector boundaries
+<span class="ex">Total</span> free space is 2014 sectors (1007.0 KiB)
+
+<span class="ex">Number</span>  Start (sector)    <span class="ex">End</span> (sector)  <span class="ex">Size</span>       Code  Name
+   <span class="ex">1</span>            2048            6143   2.0 MiB     EF02  BIOS boot partition
+   <span class="ex">2</span>            6144         2103295   1024.0 MiB  EF00  EFI System
+   <span class="ex">3</span>         2103296       251658206   119.0 GiB   8E00  Linux LVM</code></pre></div>
+<h3 id="grub-compatibility-devsda1">Grub Compatibility: /dev/sda1</h3>
+<p>This is used by <strong>grub</strong> <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> at boot-time when booting off a GPT disk.</p>
+<h3 id="efi-partition-devsda2">EFI Partition: /dev/sda2</h3>
+<p>UEFI will load files stored in this partition when booting.</p>
+<h3 id="main-data-partition-devsda3">Main Data Partition: /dev/sda3</h3>
+<p>This is used for creating the logical volumes <strong>swap</strong> (4GB), <strong>/</strong> (20GB), <strong>/home</strong> (20GB) and <strong>/opt</strong> (20GB) in this post, it’s size should reflect the sum of the sizes of all logical volumes you wish to create. Note that any free space left of the disk can be used later, and those logical volumes can be increased (or decreased) in size.</p>
+<h1 id="linux-unified-key-setup-luks">Linux Unified Key Setup (LUKS)</h1>
+<p>Now that the partitions are setup, it’s time to encrypt the main partition, <strong>/dev/sda3</strong>. This is optional and there are a few ways to do it, this post uses <em><a href="https://guardianproject.info/code/luks/">LUKS</a></em>.</p>
+<p>The <em><a href="https://gitlab.com/cryptsetup/cryptsetup">cryptsetup</a></em> tool is used to create <strong>LUKS</strong> volumes. To search nix packages the command <code class="sourceCode bash"><span class="ex">nix-env</span> -qaP packageName</code> <a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a> can be used:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-env</span> -qaP cryptsetup
+
+<span class="ex">nixos.cryptsetup</span>  cryptsetup-1.7.0</code></pre></div>
+<p>Now that we know <strong>cryptsetup</strong> is in the package list, we can install it with <code class="sourceCode bash"><span class="ex">nix-env</span></code>:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nix-env</span> -i cryptsetup
+
+<span class="ex">installing</span> <span class="st">'cryptsetup-1.7.0'</span>
+<span class="ex">building</span> path(s) <span class="st">'/nix/store/86mqcs95fb3gkkb74481fbf90zh5w98l-user-environment'</span>
+<span class="ex">created</span> 44 symlinks in user environment</code></pre></div>
+<h2 id="encrypting-devsda3">Encrypting /dev/sda3</h2>
+<p>I won’t go into detail about <strong>LUKS</strong> or <strong>cryptsetup</strong> here, we will also just use the defaults for both. Simply run the following <strong>cryptsetup</strong> command and enter a passphrase:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cryptsetup</span> -y -v luksFormat /dev/sda3
+
+<span class="ex">WARNING</span>!
+========
+<span class="ex">This</span> will overwrite data on /dev/sda3 irrevocably.
+
+<span class="ex">Are</span> you sure? (Type uppercase yes)<span class="bu">:</span> YES
+<span class="ex">Enter</span> passphrase: 
+<span class="ex">Verify</span> passphrase: 
+<span class="ex">Command</span> successful.</code></pre></div>
+<p><strong>/dev/sda3</strong> is now encrypted! <a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a> The options passed to <em>cryptsetup</em> have the following meaning:</p>
+<ul>
+<li><strong>-y</strong> : prompt for passphrase twice.</li>
+<li><strong>-v</strong> : verbose mode.</li>
+<li><strong>luksFormat</strong> : initializes a LUKS partition and sets the initial passphrase (for key-slot 0) <a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a>.</li>
+</ul>
+<p>Great, we now have an encrypted disk, but how is it used? Let’s jump back to <strong>cryptsetup</strong>, it has a command <code class="sourceCode bash"><span class="ex">cryptsetup</span> luksOpen LUKS_DEVICE NAME</code> which, when it verifies the passphrase (in our case), will open the <strong>LUKS</strong> device and create a mapping to it (on the path <strong>/dev/mapper/NAME</strong>)from the given name.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">cryptsetup</span> luksOpen /dev/sda3 enc-data
+
+<span class="ex">Enter</span> passphrase for /dev/sda3: 
+
+$ <span class="fu">ls</span> -la /dev/mapper/
+<span class="ex">total</span> 0
+<span class="ex">drwxr-xr-x</span>  2 root root      80 Jul  9 18:43 .
+<span class="ex">drwxr-xr-x</span> 18 root root    3320 Jul  9 18:43 ..
+<span class="ex">lrwxrwxrwx</span>  1 root root       7 Jul  9 18:43 enc-data -<span class="op">&gt;</span> ../dm-0</code></pre></div>
+<p>Sweet! We now have an encrypted partition and know how to access it. All we have left to do is setup logical volumes on the partition.</p>
+<h1 id="lvm-setup">LVM Setup</h1>
+<p>Make sure our data partition - <strong>/dev/sda3</strong> - is open and mapped to the path <strong>/dev/mapper/enc-data</strong> with <strong>luksOpen</strong>, as mentioned above.</p>
+<p>There are three steps to setting up <em>logical volumes</em>, creating a <em>physical volume</em> (PV), a <em>volume group</em> (VG) and a <em>logical volume</em> (LV). If you are unfamiliar with Logical Volume Management (LVM) the <a href="https://wiki.archlinux.org/index.php/LVM">Arch Linux Wiki entry</a> is a good resource.</p>
+<p>As a quick description, a physical disk can be divided into one or more physical volumes, a volume group is made up of one or mode physical volumes and logical volumes are created within volume groups.</p>
+<h2 id="physical-volume">Physical Volume</h2>
+<p><code class="sourceCode bash"><span class="ex">pvcreate</span></code> is the command used to create physical volumes. Let’s use this to create a physical volume on <strong>/dev/mapper/enc-data</strong>:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">pvcreate</span> /dev/mapper/enc-data 
+
+<span class="ex">Physical</span> volume <span class="st">&quot;/dev/mapper/enc-data&quot;</span> successfully created</code></pre></div>
+<p><code class="sourceCode bash"><span class="ex">pvdisplay</span></code> is used to display information on physical volumes on the system.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">pvdisplay</span>
+
+<span class="st">&quot;/dev/mapper/enc-data&quot;</span> <span class="ex">is</span> a new physical volume of <span class="st">&quot;119.00 GiB&quot;</span>
+<span class="ex">---</span> NEW Physical volume ---
+<span class="ex">PV</span> Name               /dev/mapper/enc-data
+<span class="ex">VG</span> Name               
+<span class="ex">PV</span> Size               119.00 GiB
+<span class="ex">Allocatable</span>           NO
+<span class="ex">PE</span> Size               0   
+<span class="ex">Total</span> PE              0
+<span class="ex">Free</span> PE               0
+<span class="ex">Allocated</span> PE          0
+<span class="ex">PV</span> UUID               H3bhmD-KR9n-XaHb-03L6-TpN2-pYB5-DtUG7x</code></pre></div>
+<h2 id="volume-group">Volume Group</h2>
+<p><code class="sourceCode bash"><span class="ex">vgcreate</span></code> is used to create a volume group. Lets create a volume group called <strong>vg</strong>.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">vgcreate</span> vg /dev/mapper/enc-data
+
+<span class="ex">Volume</span> group <span class="st">&quot;vg&quot;</span> successfully created</code></pre></div>
+<p><code class="sourceCode bash"><span class="ex">vgdisplay</span></code> displays info on the systems volume groups.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">vgdisplay</span>
+
+<span class="ex">---</span> Volume group ---
+<span class="ex">VG</span> Name               vg
+<span class="ex">System</span> ID             
+<span class="ex">Format</span>                lvm2
+<span class="ex">Metadata</span> Areas        1
+<span class="ex">Metadata</span> Sequence No  1
+<span class="ex">VG</span> Access             read/write
+<span class="ex">VG</span> Status             resizable
+<span class="ex">MAX</span> LV                0
+<span class="ex">Cur</span> LV                0
+<span class="ex">Open</span> LV               0
+<span class="ex">Max</span> PV                0
+<span class="ex">Cur</span> PV                1
+<span class="ex">Act</span> PV                1
+<span class="ex">VG</span> Size               118.99 GiB
+<span class="ex">PE</span> Size               4.00 MiB
+<span class="ex">Total</span> PE              30462
+<span class="ex">Alloc</span> PE / Size       0 / 0   
+<span class="ex">Free</span>  PE / Size       30462 / 118.99 GiB
+<span class="ex">VG</span> UUID               O9EIaS-kX9Y-EXjo-I3zU-mPXY-9SVB-br2fEy</code></pre></div>
+<h2 id="logical-volume">Logical Volume</h2>
+<p><code class="sourceCode bash"><span class="ex">lvcreate</span></code> is used to create a logical volume. In this case, we want to create four logical volumes from our volume group <strong>vg</strong>.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">lvcreate</span> -n swap --size 8G vg
+<span class="ex">lvcreate</span> -n root --size 20G vg
+<span class="ex">lvcreate</span> -n home --size 20G vg
+<span class="ex">lvcreate</span> -n opt --size 20G vg</code></pre></div>
+<p>Running the above four lvcreate commands will give us our logical volumes <strong>swap</strong>, <strong>root</strong>, <strong>home</strong> and <strong>opt</strong>. Use <code class="sourceCode bash"><span class="ex">lvdisplay</span></code> to get more info on them:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">lvdisplay</span>
+
+<span class="ex">---</span> Logical volume ---
+<span class="ex">LV</span> Path                /dev/vg/swap
+<span class="ex">LV</span> Name                swap
+<span class="ex">VG</span> Name                vg
+<span class="ex">LV</span> UUID                F5DbgU-ymix-24Bh-JMTy-q2kL-ayvN-UpNUFB
+<span class="ex">LV</span> Write Access        read/write
+<span class="ex">LV</span> Creation host, time nixos, 2016-07-09 19:11:46 +0000
+<span class="ex">LV</span> Status              available
+<span class="co"># open                 0</span>
+<span class="ex">LV</span> Size                8.00 GiB
+<span class="ex">Current</span> LE             2048
+<span class="ex">Segments</span>               1
+<span class="ex">Allocation</span>             inherit
+<span class="ex">Read</span> ahead sectors     auto
+<span class="ex">-</span> currently set to     256
+<span class="ex">Block</span> device           254:1
+ 
+<span class="ex">---</span> Logical volume ---
+<span class="ex">LV</span> Path                /dev/vg/root
+<span class="ex">LV</span> Name                root
+<span class="ex">VG</span> Name                vg
+<span class="ex">LV</span> UUID                FNLEbI-z05h-J7br-OMst-Ui0t-yq3r-BMNVjA
+<span class="ex">LV</span> Write Access        read/write
+<span class="ex">LV</span> Creation host, time nixos, 2016-07-09 19:11:46 +0000
+<span class="ex">LV</span> Status              available
+<span class="co"># open                 0</span>
+<span class="ex">LV</span> Size                20.00 GiB
+<span class="ex">Current</span> LE             5120
+<span class="ex">Segments</span>               1
+<span class="ex">Allocation</span>             inherit
+<span class="ex">Read</span> ahead sectors     auto
+<span class="ex">-</span> currently set to     256
+<span class="ex">Block</span> device           254:2
+ 
+<span class="ex">---</span> Logical volume ---
+<span class="ex">LV</span> Path                /dev/vg/home
+<span class="ex">LV</span> Name                home
+<span class="ex">VG</span> Name                vg
+<span class="ex">LV</span> UUID                zBLqKD-S6n7-BcTh-1oAF-TLvV-26Oc-dQ3wQR
+<span class="ex">LV</span> Write Access        read/write
+<span class="ex">LV</span> Creation host, time nixos, 2016-07-09 19:11:46 +0000
+<span class="ex">LV</span> Status              available
+<span class="co"># open                 0</span>
+<span class="ex">LV</span> Size                20.00 GiB
+<span class="ex">Current</span> LE             5120
+<span class="ex">Segments</span>               1
+<span class="ex">Allocation</span>             inherit
+<span class="ex">Read</span> ahead sectors     auto
+<span class="ex">-</span> currently set to     256
+<span class="ex">Block</span> device           254:3
+ 
+<span class="ex">---</span> Logical volume ---
+<span class="ex">LV</span> Path                /dev/vg/opt
+<span class="ex">LV</span> Name                opt
+<span class="ex">VG</span> Name                vg
+<span class="ex">LV</span> UUID                hr3GRw-d0P4-hDIw-HRIo-hqKK-Lql9-gD58a7
+<span class="ex">LV</span> Write Access        read/write
+<span class="ex">LV</span> Creation host, time nixos, 2016-07-09 19:11:47 +0000
+<span class="ex">LV</span> Status              available
+<span class="co"># open                 0</span>
+<span class="ex">LV</span> Size                20.00 GiB
+<span class="ex">Current</span> LE             5120
+<span class="ex">Segments</span>               1
+<span class="ex">Allocation</span>             inherit
+<span class="ex">Read</span> ahead sectors     auto
+<span class="ex">-</span> currently set to     256
+<span class="ex">Block</span> device           254:4</code></pre></div>
+<p>Ok! That’s our disk setup ~90% complete.</p>
+<h1 id="final-disk-setup">Final Disk Setup</h1>
+<p>All we have left to do now is format the boot partition and our logical volumes and we ca start preparing NixOs for install. The formatting can be done with a short script:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">mkfs.vfat</span> -n BOOT /dev/sda2
+<span class="ex">mkswap</span> -L swap /dev/vg/swap
+<span class="kw">for</span> <span class="ex">lv</span> in root home opt<span class="kw">;</span> <span class="kw">do</span> 
+  <span class="ex">mkfs.xfs</span> -L <span class="va">$lv</span> /dev/vg/<span class="va">$lv</span>
+<span class="kw">done</span></code></pre></div>
+<p>This formats <strong>/dev/sda2</strong> with vfat and labels it <strong>BOOT</strong>, sets up a swap area on our LV <strong>/dev/vg/swap</strong> and finally formats our LV’s <strong>/dev/vg/root</strong>, <strong>/dev/vg/home</strong> and <strong>/dev/vg/opt</strong> with <strong>xfs</strong>.</p>
+<p>Awesome! Disk setup is now 100% complete!</p>
+<h1 id="install-nixos">Install NixOS</h1>
+<p>Now that our disk is ready we can prepare to install NixOs, this is pretty short, and sweet.</p>
+<p>First, we need to create the directories <strong>/mnt/boot</strong>, <strong>/mnt/home</strong> and <strong>/mnt/opt</strong>. Then, we need to mount our LV’s - that we created in the previous section - and our boot partition:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">mkdir</span> /mnt/<span class="dt">{boot,home,opt}</span>
+<span class="fu">mount</span> /dev/vg/root /mnt
+<span class="fu">mount</span> /dev/vg/home /mnt/home
+<span class="fu">mount</span> /dev/vg/opt /mnt/opt
+<span class="fu">mount</span> /dev/sda2 /mnt/boot</code></pre></div>
+<p>Before we install NixOs, we have to run <code class="sourceCode bash"><span class="ex">nixos-generate-config</span>  --root /mnt/</code> <a href="#fn6" class="footnoteRef" id="fnref6"><sup>6</sup></a>:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">nixos-generate-config</span> --root /mnt/
+
+<span class="ex">writing</span> /mnt/etc/nixos/hardware-configuration.nix...
+<span class="ex">writing</span> /mnt/etc/nixos/configuration.nix...</code></pre></div>
+<ul>
+<li><strong>/mnt/etc/nixos/hardware-configuration.nix</strong> contains NixOs configuration options based on current hardware config.</li>
+<li><strong>/mnt/etc/nixos/configuration.nix</strong> is the main NixOs system configuration module.</li>
+</ul>
+<p>We need to add some extra information to <strong>/mnt/etc/nixos/configuration.nix</strong> to tell NixOs what our boot device is, and the fact that it is also a LUKS device:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">boot<span class="fu">.</span>loader<span class="fu">.</span>grub<span class="fu">.</span>device <span class="fu">=</span> <span class="st">&quot;/dev/sda&quot;</span>;
+
+boot<span class="fu">.</span>initrd<span class="fu">.</span>luks<span class="fu">.</span>devices <span class="fu">=</span> [{
+  name <span class="fu">=</span> <span class="st">&quot;root&quot;</span>;
+  device <span class="fu">=</span> <span class="st">&quot;/dev/sda3&quot;</span>;
+  preLVM <span class="fu">=</span> true;
+}];</code></pre></div>
+<p>This can be added anywhere in the file, however there should already be a section for <strong>boot.loader.grub.device</strong> which is commented out. If so, uncomment it and add the config for LUKS (<strong>boot.initrd.luks.devices</strong>) right after it.</p>
+<p>Now we can install! Just run:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">nixos-install</span></code></pre></div>
+<p>This can take some time, you should see information on what packages are being downloaded and installed while the installation is running. You will be prompted to enter the <strong>root</strong> password during the installationi, once you do that the installation has completed and you can boot up your new NixOs install! <a href="#fn7" class="footnoteRef" id="fnref7"><sup>7</sup></a></p>
+<h1 id="conclusion">Conclusion</h1>
+<p>The aim of this post was just to get NixOs installed, using the steps I used on my own system. I plan on doing some more posts on Nix and NixOs over the coming weeks, with the overall goal being to gain a better understanding of both.</p>
+<p>Once I have that, I’ll start diving into more interesting topics like NixOps and the use of the three in Configuration Management across multiple connected systems.</p>
+<p>Next post will be on the use of Nix in setting up a development environment in multiple languages, stay tuned!</p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>1 MiB = 2<sup>20</sup> bytes = 1024 kibibytes = 1048576 bytes.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>See <a href="https://wiki.archlinux.org/index.php/GRUB#GUID_Partition_Table_.28GPT.29_specific_instructions">Arch Linux - Grub GPT</a><a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>Short for <code class="sourceCode bash"><span class="ex">nix-env</span> --query --available --attr-path packageName</code>. This searches all available packages for the packageName, and will also print out its attribute path (see <a href="https://nixos.org/wiki/Howto_find_a_package_in_NixOS#Install_by_attribute">Install By Attribute Path</a>).<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>Running <code class="sourceCode bash"><span class="ex">cryptsetup</span> -y -v luksFormat /dev/sda3</code> will use the default LUKS settings, which can be found by running <code class="sourceCode bash"><span class="ex">cryptsetup</span> --help</code>. In my case (v1.7.0 of <strong>cryptsetup</strong>) they are <em>LUKS1: aes-xts-plain64, Key: 256 bits, LUKS header hashing: sha256, RNG: /dev/urandom</em>.<a href="#fnref4">↩</a></p></li>
+<li id="fn5"><p>See <a href="https://wiki.archlinux.org/index.php/Dm-crypt/Device_encryption#Key_management">Arch Linux - Luks KeyMangement</a> for more information.<a href="#fnref5">↩</a></p></li>
+<li id="fn6"><p>For more info on <code class="sourceCode bash"><span class="ex">nixos-generate-config</span></code> see Section 10 of the <a href="https://nixos.org/nixos/manual/#sec-installation">Nix Install Manual</a>.<a href="#fnref6">↩</a></p></li>
+<li id="fn7"><p>When the system boots you will be asked for a password <em>before</em> the login prompt, this is the password you used to create the LUKS volume.<a href="#fnref7">↩</a></p></li>
+</ol>
+</div>
+
+        <!-- FIXME : These are here so the footer doesn't cover the last part of the body. Fix! -->
+        <br />
+        <br />
+        <br />
+    </div>
+
+    <div class="navbar navbar-default navbar-fixed-bottom">
+        <div class="container">
+            <p class="navbar-text pull-left">&copy; 2016 - Stephen O'Brien.</p>
+            <div class="pull-right">
+                <a class="btn navbar-btn btn-social-icon btn-github" href="https://github.com/wayofthepie">
+                    <span class="fa fa-github"></span>
+                </a>
+                <a class="btn navbar-btn btn-social-icon btn-bitbucket" href="https://bitbucket.org/wayofthepie">
+                    <span class="fa fa-bitbucket"></span>
+                </a>
+            </div>
+        </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+</div>
+
+</body>
+</html>
