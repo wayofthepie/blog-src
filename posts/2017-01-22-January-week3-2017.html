@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Wayofthepie - 2017-01-22-January-week3-2017</title>
+    <link rel="stylesheet" type="text/css" href="../css/syntax.css">
+    <link rel="stylesheet" type="text/css" href="../css/fluff.css">
+    <link rel="stylesheet" type="text/css" href="../css/fix.css">
+    <link rel="stylesheet" type="text/css" href="../css/github.css">
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-social/5.1.1/bootstrap-social.min.css" crossorigin="anonymous">
+    <link type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+</head>
+<body>
+<div id="header">
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="../index.html">
+                    Compute
+                </a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li class="inactive"><a href="../index.html">Home</a></li>
+                    <li class="inactive"><a href="../about.html">About</a></li>
+                    <li class="inactive"><a href="../contact.html">Contact</a></li>
+                    <li class="inactive"><a href="../archive.html">Archives</a></li>
+
+                </ul>
+            </div><!--/.nav-collapse -->
+        </div>
+    </nav>
+</div>
+
+<div class="container theme-showcase" role="main">
+    <div id="content">
+        <div class="page-header">
+            <h1>2017-01-22-January-week3-2017</h1>
+        </div>
+        <div class="info">
+    Posted on January 22, 2017
+    
+</div>
+<div class="info">
+  
+    Tags: 
+  
+</div>
+<div id="header">
+<div class="container">
+<div class="navbar-header">
+<span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span>
+<a href="../index.html" class="navbar-brand">Compute</a>
+</div>
+<div id="navbar" class="navbar-collapse collapse">
+<ul>
+<li><a href="../index.html">Home</a></li>
+<li><a href="../about.html">About</a></li>
+<li><a href="../contact.html">Contact</a></li>
+<li><a href="../archive.html">Archives</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container theme-showcase" role="main">
+<div id="content">
+<div class="page-header">
+<h1 id="january-week-3-js-haskell">January Week 3: JS, Haskell</h1>
+</div>
+<div class="info">
+Posted on January 22, 2017
+</div>
+<div class="info">
+Tags: <a href="../tags/weekly.html">weekly</a>
+</div>
+<h1 id="nothing-specific">Nothing Specific</h1>
+<p>I keep saying to myself “I’ll write a blog post on <em>x</em> this week”, it rarely happens. So instead, I’m going to do a short braindump each weekend. At least this way I will have a written post <em>and</em> will have some reference to what I did in the past. Hopefully, this will give me a bit more drive to write and I’ll go finish the posts I’ve been meaning to do!</p>
+<h1 id="vulgr-ui---react">Vulgr UI - React</h1>
+<p>Vulgr is a project I’ve been working on, on and off, for a while. The goal is to build a dependency analysis platform - analyze your <code>gradle</code>/<code>node</code>/<code>whatever</code> dependencies to see whether they contain known vulnerabilities or bugs, reading from whatever data sources (CVE database, github issues, etc…) that make sense.</p>
+<p>This week, I did some work on how this information could be displayed to users on a web interface, e.g.:</p>
+<p><img src="../images/vulgr-ui-jan3-weekly.png" class="img-responsive" /></p>
+<p>This is built with <a href="https://facebook.github.io/react/">react</a> and <a href="http://www.material-ui.com/#/">material-ui</a>. The code for the card is located at <a href="https://github.com/wayofthepie/vulgr-ui-experimental/blob/material/src/components/analysis/summary/AnalysisSummaryCard.js">AnalysisSummaryCard.js</a>. Following is the code for the status icon’s in the card, nice, flexible re-usable component!</p>
+<div class="sourceCode">
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="st">'use strict'</span><span class="op">;</span>
+
+<span class="im">import</span> React<span class="op">,</span> <span class="op">{</span>PropTypes<span class="op">}</span> <span class="im">from</span> <span class="st">'react'</span><span class="op">;</span>
+<span class="im">import</span> ReactTooltip <span class="im">from</span> <span class="st">'react-tooltip'</span><span class="op">;</span>
+
+<span class="kw">let</span> statusIcon <span class="op">=</span> (iconType<span class="op">,</span> attributes<span class="op">,</span> style) <span class="op">=&gt;</span> <span class="op">{</span>
+  <span class="cf">return</span> (
+    <span class="op">&lt;</span>i className<span class="op">=</span><span class="st">'material-icons md-36'</span> <span class="op">{</span>...<span class="at">attributes</span><span class="op">}</span>
+       style<span class="op">={</span>style<span class="op">}&gt;</span>
+      <span class="op">{</span>iconType<span class="op">}</span>
+    <span class="op">&lt;</span><span class="ss">/i&gt;</span>
+<span class="ss">  </span><span class="sc">)</span><span class="ss">;</span>
+<span class="ss">};</span>
+
+<span class="ss">let tooltippableStatusIcon = </span><span class="sc">(</span><span class="ss">iconType, tooltipInfo, style</span><span class="sc">)</span><span class="ss"> =&gt; {</span>
+<span class="ss">  let tooltip = function </span><span class="sc">()</span><span class="ss"> {</span>
+<span class="ss">    if </span><span class="sc">(</span><span class="ss">tooltipInfo</span><span class="sc">)</span><span class="ss"> {</span>
+<span class="ss">      return </span><span class="sc">(</span>
+<span class="ss">        &lt;ReactTooltip place='top'</span>
+<span class="ss">                      id={tooltipInfo.id}</span>
+<span class="ss">                      type={tooltipInfo.type}</span>
+<span class="ss">                      effect='solid'&gt;</span>
+<span class="ss">          &lt;span &gt;&lt;strong&gt;{tooltipInfo.message}&lt;/strong</span><span class="op">&gt;&lt;</span><span class="ss">/span&gt;</span>
+<span class="ss">        &lt;/ReactTooltip</span><span class="op">&gt;</span>
+      )<span class="op">;</span>
+    <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span>
+      <span class="cf">return</span> <span class="kw">null</span><span class="op">;</span>
+    <span class="op">}</span>
+  }<span class="op">;</span>
+
+  <span class="kw">let</span> tooltippedAttributes <span class="op">=</span> () <span class="op">=&gt;</span> <span class="op">{</span>
+    <span class="cf">return</span> tooltipInfo <span class="op">?</span> <span class="op">{</span><span class="st">'data-tip'</span><span class="op">:</span> <span class="st">''</span><span class="op">,</span> <span class="st">'data-for'</span><span class="op">:</span> <span class="va">tooltipInfo</span>.<span class="at">id</span><span class="op">}</span> : []<span class="op">;</span>
+  <span class="op">};</span>
+
+  <span class="cf">return</span> (
+    <span class="op">&lt;</span>div<span class="op">&gt;</span>
+      <span class="op">{</span> <span class="at">tooltip</span>() <span class="op">}</span>
+      <span class="op">{</span> <span class="at">statusIcon</span>(iconType<span class="op">,</span> <span class="at">tooltippedAttributes</span>()<span class="op">,</span> style) <span class="op">}</span>
+    <span class="op">&lt;</span><span class="ss">/div&gt;</span>
+<span class="ss">  </span><span class="sc">)</span><span class="ss">;</span>
+<span class="ss">};</span>
+
+<span class="ss">export const StatusIcon = </span><span class="sc">(</span><span class="ss">{iconType, tooltipInfo, style}</span><span class="sc">)</span><span class="ss"> =&gt; {</span>
+<span class="ss">  return tooltippableStatusIcon</span><span class="sc">(</span><span class="ss">iconType, tooltipInfo, style</span><span class="sc">)</span><span class="ss">;</span>
+<span class="ss">};</span>
+
+<span class="ss">StatusIcon.propTypes = {</span>
+<span class="ss">  iconType: PropTypes.string.isRequired,</span>
+<span class="ss">  tooltipInfo: PropTypes.shape</span><span class="sc">(</span><span class="ss">{</span>
+<span class="ss">    id: PropTypes.string.isRequired,</span>
+<span class="ss">    type: PropTypes.string.isRequired,</span>
+<span class="ss">    message: PropTypes.string.isRequired</span>
+<span class="ss">  }</span><span class="sc">)</span><span class="ss">,</span>
+<span class="ss">  style: PropTypes.object</span>
+<span class="ss">};</span>
+
+<span class="ss">export default StatusIcon;</span></code></pre></div>
+</div>
+<p>Here is an example of its use to render the error icon, first a function to wrap up the JSX:</p>
+<div class="sourceCode">
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">let</span> createStatusIcon <span class="op">=</span> (iconType<span class="op">,</span> tooltipInfo<span class="op">,</span> style) <span class="op">=&gt;</span> <span class="op">{</span>
+  <span class="cf">return</span> (
+    <span class="op">&lt;</span>StatusIcon
+      iconType<span class="op">={</span>iconType<span class="op">}</span>
+      tooltipInfo<span class="op">={</span>tooltipInfo<span class="op">}</span>
+      style<span class="op">={</span>style<span class="op">}</span> <span class="ss">/&gt;</span>
+<span class="ss">  </span><span class="sc">)</span><span class="ss">;</span>
+<span class="ss">};</span></code></pre></div>
+</div>
+<p>Concrete usage:</p>
+<div class="sourceCode">
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">let</span> errorIcon <span class="op">=</span> () <span class="op">=&gt;</span> <span class="op">{</span>
+  <span class="kw">let</span> icon <span class="op">=</span> <span class="st">'error'</span><span class="op">;</span>
+  <span class="kw">let</span> marginLeft <span class="op">=</span> <span class="dv">10</span><span class="op">;</span>
+  <span class="kw">let</span> tooltipInfo <span class="op">=</span> <span class="at">buildTooltipInfo</span>(<span class="st">'analysis-card-error-tooltip'</span><span class="op">,</span> <span class="st">'error'</span><span class="op">,</span> <span class="st">'Error!'</span><span class="op">,</span> <span class="op">{</span>marginLeft<span class="op">}</span>)<span class="op">;</span>
+  <span class="kw">let</span> style <span class="op">=</span> <span class="op">{</span><span class="dt">color</span><span class="op">:</span> <span class="st">'red'</span><span class="op">,</span> <span class="dt">float</span><span class="op">:</span> <span class="st">'left'</span><span class="op">,</span> marginLeft<span class="op">};</span>
+  <span class="cf">return</span> <span class="at">createStatusIcon</span>(icon<span class="op">,</span> tooltipInfo<span class="op">,</span> style)<span class="op">;</span>
+<span class="op">};</span></code></pre></div>
+</div>
+<p>Pretty flxeible! The color and style can easily be changed so the icon can fit in without much hassle in components with complex styles, or can be greyed out, etc…</p>
+<p>I use Angular and bootstrap at work, so far <em>react</em> and <em>material</em> have been a dream in comparison.</p>
+<h1 id="haskell-criu-rpc-client">Haskell Criu RPC Client</h1>
+<p>I’ve been toying about with <a href="https://criu.org/">criu</a> for the last few weeks. I decided to write some bindings to it in haskell.</p>
+<p>Criu’s RPC API <a href="#fn1" id="fnref1" class="footnoteRef"><sup>1</sup></a> uses <a href="https://github.com/google/protobuf">protobuf</a>. I used the <a href="https://github.com/google/proto-lens">proto-lens</a> library to generate lenses and data types. This gives a pretty nice foundatoin to build upon - the project for generation is on github, <a href="https://github.com/wayofthepie/haskell-criu-rpc-types">haskell-criu-rpc-types</a> <a href="#fn2" id="fnref2" class="footnoteRef"><sup>2</sup></a>.</p>
+<p>With that foundation, I threw together a quick client:</p>
+<div class="sourceCode">
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span>
+<span class="kw">module</span> <span class="dt">Criu</span> (
+  <span class="kw">module</span> <span class="dt">Proto.Criu.Rpc</span>
+  , <span class="kw">module</span> <span class="dt">Lens.Family2</span>
+  , callCriu
+  , callCriu'
+  ) <span class="kw">where</span>
+
+<span class="kw">import </span><span class="dt">Control.Exception.Base</span> (<span class="dt">IOException</span>, bracket, try)
+<span class="kw">import </span><span class="dt">Lens.Family2</span> ((.~))
+<span class="kw">import </span><span class="dt">Data.ProtoLens</span> (decodeMessage, encodeMessage)
+<span class="kw">import </span><span class="dt">Proto.Criu.Rpc</span>
+<span class="kw">import </span><span class="dt">Network.Socket</span> (<span class="dt">Family</span>(<span class="dt">AF_UNIX</span>), <span class="dt">SocketType</span>(<span class="dt">SeqPacket</span>), <span class="dt">SockAddr</span>(<span class="dt">SockAddrUnix</span>), close, connect, socket)
+<span class="kw">import </span><span class="dt">Network.Socket.ByteString</span> (recv, send)
+
+<span class="co">-- | Send request to criu socket. Can throw exceptions.</span>
+<span class="ot">callCriu ::</span> FilePath <span class="ot">-&gt;</span> <span class="dt">Criu_req</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">String</span> <span class="dt">Criu_resp</span>)
+callCriu fp req <span class="fu">=</span> <span class="kw">do</span>
+  resp <span class="ot">&lt;-</span> withSocket <span class="fu">$</span> \sock <span class="ot">-&gt;</span> <span class="kw">do</span>
+    connect sock (<span class="dt">SockAddrUnix</span> fp)
+    send sock (encodeMessage req)
+    recv sock <span class="dv">1024</span>
+  pure (decodeMessage<span class="ot"> resp ::</span> <span class="dt">Either</span> <span class="dt">String</span> <span class="dt">Criu_resp</span>)
+ <span class="kw">where</span>
+  withSocket f <span class="fu">=</span> bracket
+    (socket <span class="dt">AF_UNIX</span> <span class="dt">SeqPacket</span> <span class="dv">0</span>)
+    (close)
+    (\sock <span class="ot">-&gt;</span> f sock)
+
+<span class="co">-- | Send a request to criu, but wrap up IOExceptions in Either.</span>
+<span class="ot">callCriu' ::</span> FilePath <span class="ot">-&gt;</span> <span class="dt">Criu_req</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">String</span> <span class="dt">Criu_resp</span>)
+callCriu' fp req <span class="fu">=</span> <span class="kw">do</span>
+  eitherResp <span class="ot">&lt;-</span> try (callCriu fp req)
+  <span class="kw">case</span> eitherResp <span class="kw">of</span>
+    <span class="dt">Right</span> resp <span class="ot">-&gt;</span> pure resp
+    <span class="dt">Left</span> (<span class="ot">e ::</span> <span class="dt">IOException</span>) <span class="ot">-&gt;</span> pure <span class="fu">.</span> <span class="dt">Left</span> <span class="fu">.</span> show <span class="fu">$</span> e</code></pre></div>
+</div>
+<p>Both <code>callCriu</code> and <code>callCriu'</code> expect the path to the <code>criu</code> socket and a <code>Criu_req</code> type.</p>
+<p>To build the actual <code>Criu_req</code> expected by the calls is is pretty straightforward. In <code>ghci</code>:</p>
+<div class="sourceCode">
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> build (type' <span class="fu">.~</span> <span class="dt">CHECK</span>)<span class="ot"> ::</span> <span class="dt">Criu_req</span>
+<span class="dt">Criu_req</span> {
+  _Criu_req'type' <span class="fu">=</span> <span class="dt">CHECK</span>
+  , _Criu_req'opts <span class="fu">=</span> <span class="dt">Nothing</span>
+  , _Criu_req'notifySuccess <span class="fu">=</span> <span class="dt">Nothing</span>
+  , _Criu_req'keepOpen <span class="fu">=</span> <span class="dt">Nothing</span>
+  , _Criu_req'features <span class="fu">=</span> <span class="dt">Nothing</span>
+  }</code></pre></div>
+</div>
+<p><code>build (type' .~ CHECK) :: Criu_req</code> builds a request for a <code>criu</code> check. So, an actual call looks as follows:</p>
+<div class="sourceCode">
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> callCriu' <span class="st">&quot;criu_service.socket&quot;</span> (build (type' <span class="fu">.~</span> <span class="dt">CHECK</span>)<span class="ot"> ::</span> <span class="dt">Criu_req</span>)
+<span class="dt">Right</span> (
+  <span class="dt">Criu_resp</span> {
+    _Criu_resp'type' <span class="fu">=</span> <span class="dt">CHECK</span>
+    , _Criu_resp'success <span class="fu">=</span> <span class="dt">True</span>
+    , _Criu_resp'dump <span class="fu">=</span> <span class="dt">Nothing</span>
+    , _Criu_resp'restore <span class="fu">=</span> <span class="dt">Nothing</span>
+    , _Criu_resp'notify <span class="fu">=</span> <span class="dt">Nothing</span>
+    , _Criu_resp'ps <span class="fu">=</span> <span class="dt">Nothing</span>
+    , _Criu_resp'crErrno <span class="fu">=</span> <span class="dt">Nothing</span>
+    , _Criu_resp'features <span class="fu">=</span> <span class="dt">Nothing</span>
+    , _Criu_resp'crErrmsg <span class="fu">=</span> <span class="dt">Nothing</span>
+    }
+  )</code></pre></div>
+</div>
+<p>From the service logs:</p>
+<pre><code>$ criu service
+Warn  (cr-service.c:1023): Binding to local dir address!
+Warn  (cr-check.c:827): Skipping cgroup namespaces check
+Looks good.</code></pre>
+<p>Success! Lots to improve, but a good start. I’ll do a more in-depth post on this once it matures.</p>
+<h1 id="work-stuff">Work Stuff</h1>
+<p>Formed a new team, started a new feature around re-designing the landing page/user dashboard for our platform. UI design is not really something I have a big drive for, but since I’ve been using <code>react</code> and <code>material</code> on my own projects (Vulgr) it’s interesting to see other peoples take on what makes a good system.</p>
+<p>It’s also interesting to see how <code>Angular</code>/<code>bootstrap</code>, which we use at work, compare to <code>react</code>/<code>material</code> - I know you can’t really compare <code>Angular</code> and <code>react</code>, one being an entire framework, the other just a layout library. But, perhaps there is something there for a post.</p>
+<h1 id="next-week">Next Week</h1>
+<p>I have post on using Nix for development environments which has been sitting there for months… I will finish this!</p>
+<div class="footnotes">
+<hr />
+<ol>
+<li><div id="fn1">
+
+</div>
+<p>See <a href="https://criu.org/RPC" class="uri" class="uri">https://criu.org/RPC</a> for more information.<a href="#fnref1">↩</a></p></li>
+<li><div id="fn2">
+
+</div>
+<p>It’s also on hackage, <a href="https://hackage.haskell.org/package/criu-rpc-types-0.0.0.1" class="uri" class="uri">https://hackage.haskell.org/package/criu-rpc-types-0.0.0.1</a>, however I’m not sure what the standard is for libraries that generate their code.<a href="#fnref2">↩</a></p></li>
+</ol>
+</div>
+<br />
+<br />
+<br />
+
+</div>
+<div class="navbar navbar-default navbar-fixed-bottom">
+<div class="container">
+<p>© 2016 - Stephen O’Brien.</p>
+<div class="pull-right">
+<a href="https://github.com/wayofthepie" class="btn navbar-btn btn-social-icon btn-github"><span class="fa fa-github"></span></a>
+</div>
+</div>
+</div>
+</div>
+
+        <!-- FIXME : These are here so the footer doesn't cover the last part of the body. Fix! -->
+        <br />
+        <br />
+        <br />
+    </div>
+
+    <div class="navbar navbar-default navbar-fixed-bottom">
+        <div class="container">
+            <p class="navbar-text pull-left">&copy; 2016 - Stephen O'Brien.</p>
+            <div class="pull-right">
+                <a class="btn navbar-btn btn-social-icon btn-github" href="https://github.com/wayofthepie">
+                    <span class="fa fa-github"></span>
+                </a>
+            </div>
+        </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+     <script src="../js/highlight.pack.js" type="text/javascript"></script>
+     <script>hljs.initHighlightingOnLoad();</script>
+</script>
+</div>
+
+</body>
+</html>
