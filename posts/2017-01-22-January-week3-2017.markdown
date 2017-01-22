@@ -109,7 +109,7 @@ let errorIcon = () => {
 };
 ```
 
-Pretty flxeible! The color and style can easily be changed so the icon can fit in without
+Pretty flexible! The color and style can easily be changed so the icon can fit in without
 much hassle in components with complex styles, or can be greyed out, etc...
 
 I use Angular and bootstrap at work, so far _react_ and _material_ have been a dream in
@@ -121,7 +121,7 @@ write some bindings to it in haskell.
 
 Criu's RPC API [^1] uses [protobuf](https://github.com/google/protobuf). I used the
 [proto-lens](https://github.com/google/proto-lens) library to generate lenses and data
-types. This gives a pretty nice foundatoin to build upon - the project for generation is on
+types. This gives a pretty nice foundation to build upon - the project for generation is on
 github, [haskell-criu-rpc-types](https://github.com/wayofthepie/haskell-criu-rpc-types)
 [^2].
 
