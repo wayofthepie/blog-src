@@ -22,3 +22,7 @@
     background-color: white;
     transition: all 1s;
 }
+
+img {
+  border: 10px solid black;
+}

@@ -2,3 +2,8 @@
     font-weight: bold;
     text-decoration: underline;
 }
+
+.glyphicon {
+    width: 14px;
+    height: 14px;
+}

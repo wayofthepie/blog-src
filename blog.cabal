@@ -18,5 +18,7 @@ executable blog
   default-language:    Haskell2010
   ghc-options:         -threaded
   build-depends:       base == 4.*,
+                       bytestring,
                        hakyll == 4.9.*,
+                       hjsmin,
                        tagsoup

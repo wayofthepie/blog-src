@@ -3,7 +3,9 @@
 import           Data.Monoid (mappend)
 import           Hakyll
 import qualified Text.HTML.TagSoup      as TS
+import           Text.Jasmine
 import           Data.List(partition)
+import qualified Data.ByteString.Lazy.Char8 as C
 import qualified GHC.IO.Encoding as E
 
 --------------------------------------------------------------------------------
@@ -19,17 +21,36 @@ main = do
         route   idRoute
         compile compressCssCompiler
 
+    match "js/**" $ do
+        route idRoute
+        compile minifyJSCompiler
+
     match (fromList ["about.md", "contact.md"]) $ do
         route   $ setExtension "html"
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/default.html" thisContext
             >>= relativizeUrls
 
+    tags <- buildTags "posts/*" (fromCapture "tags/*.html")
+    tagsRules tags $ \tag pattern -> do
+        let title = "Posts tagged \"" ++ tag ++ "\""
+        route idRoute
+        compile $ do
+            posts <- recentFirst =<< loadAll pattern
+            let ctx = constField "title" title `mappend`
+                    activeClassField `mappend`
+                    listField "posts" postCtx (return posts) `mappend`
+                    defaultContext
+            makeItem ""
+                >>= loadAndApplyTemplate "templates/tag.html" ctx
+                >>= loadAndApplyTemplate "templates/default.html" ctx
+                >>= relativizeUrls
+
     match "posts/*" $ do
         route $ setExtension "html"
         compile $ postCompiler
-            >>= loadAndApplyTemplate "templates/post.html"    postCtx
-            >>= loadAndApplyTemplate "templates/default.html" postCtx
+            >>= loadAndApplyTemplate "templates/post.html"    (postCtxWithTags tags)
+            >>= loadAndApplyTemplate "templates/default.html" (postCtxWithTags tags)
             >>= relativizeUrls
 
     create ["archive.html"] $ do
@@ -37,7 +58,7 @@ main = do
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
             let archiveCtx =
-                    listField "posts" postCtx (return posts) `mappend`
+                    listField "posts" (postCtxWithTags tags) (return posts) `mappend`
                     constField "title" "Archives"            `mappend`
                     thisContext
 
@@ -52,7 +73,7 @@ main = do
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
             let indexCtx =
-                    activeClassField `mappend` listField "posts" postCtx (return posts) `mappend`
+                    activeClassField `mappend` listField "posts" (postCtxWithTags tags) (return posts) `mappend`
                     thisContext
 
             getResourceBody
@@ -65,9 +86,12 @@ main = do
 
 --------------------------------------------------------------------------------
 postCtx :: Context String
-postCtx =
+postCtx  =
     dateField "date" "%B %e, %Y" `mappend`
     thisContext
+
+postCtxWithTags :: Tags -> Context String
+postCtxWithTags tags = tagsField "tags" tags `mappend` postCtx
 
 thisContext :: Context String
 thisContext = activeClassField `mappend` defaultContext
@@ -90,3 +114,9 @@ postCompiler :: Compiler (Item String)
 postCompiler = fmap (withTags process) `fmap` pandocCompiler
   where process tag | TS.isTagOpenName "table" tag = addClass "table table-striped" tag
                     | otherwise                    = tag
+
+minifyJSCompiler = do
+    s<-getResourceString
+    return $ itemSetBody (minifyJS s) s
+
+minifyJS = C.unpack . minify . C.pack . itemBody
