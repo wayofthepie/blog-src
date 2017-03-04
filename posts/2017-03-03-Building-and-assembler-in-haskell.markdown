@@ -9,6 +9,8 @@ about building an assembler for a simple assembly language that compiles to runn
 6502 machine code.
 
 # The Language
+<div class="alert alert-warning">Work in progress. Review.</div>
+
 First, let's define what we want our assembly language to be able to do. To keep it simple,
 we only want to allow assignment and defining instructions for now:
 
@@ -30,7 +32,7 @@ Now for a quick and dirty grammar for the language:
 <bytes>       := "$" <byte> [<byte>]
 <label>       := ([A-Za-z]*[A-Za-z0-9]*)
 <mnemonic>    := 3 * ([A-Z])
-<hex-value>   := 2 * ([A-Fa-f0-9])
+<byte>   := 2 * ([A-Fa-f0-9])
 ```
 The above is a variation of EBNF (Extended Backus Naur Form) notation, we allow regex
 (denoted by brackets `()` e.g. `([A-Z])` denotes a single upper case letter, see `<label>`
@@ -38,8 +40,8 @@ above) for simplicity.
 
 Here's a breakdown, from the bottom up:
 
-  * `<hex-value>` is defined as `2 * ([A-Fa-f0-9])`, this means two consecutive characters that
-  are upper or lower case letters betwen `A` and `F` or digits, i.e. a two digit hexadecimal value.
+  * `<byte>` is defined as `2 * ([A-Fa-f0-9])`, this means two consecutive characters that
+    are upper or lower case letters betwen `A` and `F` or digits, i.e. a two digit hexadecimal value.
     * e.g. `2F`
 
   * `<mnemonic>` is a three letter string - all upper case.
@@ -90,8 +92,118 @@ building a parser for it. There are a lot of rules not defined in the above spec
 `<label>` cannot match a mnemonic - e.g. `LDA` cannot be a `<label>` - we'll deal with these
 later.
 
-# Quick And Dirty Lexical Analysis
-A direct translation of our grammar into haskell might look something like the following:
+# Building Our Parser
+Now that we have our grammar, we can start thinking about how we want to build our
+assembler. Normally I would work out some types first and go from there, so lets do that.
+
+```{.haskell}
+{-# LANGUAGE OverloadedStrings #-}
+module Assembler where
+
+import qualified Data.Text as T -- from the "text" package
+import Text.Megaparsec hiding (Label, label)
+
+-- | Our custom parser type.
+type Parser = Parsec Dec T.Text
+
+newtype Label = Label T.Text deriving Show
+
+newtype IsImmediate = IsImmediate Bool deriving Show
+
+data Operand = Operand IsImmediate T.Text deriving Show
+
+newtype Mnemonic = Mnemonic T.Text deriving Show
+
+newtype Var = Var Label  deriving Show
+
+newtype Val = Val Operand deriving Show
+
+data LabelOrOperand = Lbl Label | Op Operand deriving Show
+
+data Expr
+  = Instruction (Maybe Label) Mnemonic (Maybe LabelOrOperand)
+  | Assignment Var Val
+  deriving Show
+
+```
+These correspond to particular sections or our grammar, we compose them just as we did with the
+grammar itself, from the bottom up to the expression type `Expr`.
+
+Now that we have an outline of what our types might look like, we can start thinking about
+implementing some logic. When building parsers, doing Test Driven Development (TDD) with
+QuickCheck has worked out well the past for me, so lets write some tests!
+
+## Property Driven Parser Development (PDPD)
+<div class="alert alert-danger">Messy! Review!</div>
+
+To build the parser I'm going to use a parser combinator library called
+[megaparsec](https://mrkkrp.github.io/megaparsec/). I
+won't go into much detail on megaparsec or parser combinators in this post, simply put
+parser combinator libraries give you the ability to build parsers from smaller parsers.
+
+As mentioned you can see all the code on github, [here](), so I will leave out some
+boilerplate around setting up the project for tests.
+
+Looking back at our grammar we have eight symbols, each one can be represented as a
+top-level function.
+
+```{.haskell}
+expression :: Parser
+...
+byte :: Parser T.Text
+byte = undefined
+```
+The simplest parser above is `byte`, from our grammar this is just a two character
+hexadecimal string. Let's write a test for it!
+
+### Testing
+Using quickcheck to test parsers is really simple. In this case we want to test the `byte`
+parser. First we need to create an `Arbitrary` [^1] instance for two character hexadecimal
+strings. This will allow us to randomly generate these strings.
+
+```{.haskell}
+-- | Wrapper for our two character hexadecimal strings.
+newtype TwoCharHexString = TwoCharHexString T.Text deriving Show
+
+instance Arbitrary TwoCharHexString where
+  arbitrary = do
+    upper <- choose ('A', 'F')
+    lower <- choose ('a', 'f')
+    num   <- choose ('0', '9')
+    let vals = [upper, lower, num]
+    x <- elements vals
+    y <- elements vals
+    pure $ TwoCharHexString (T.pack (x:[y]))
+
+
+```
+Now with our strings being generated, we need to write a property that defines what should
+happen when `byte` parses them:
+
+```{.haskell}
+prop_byte_parse (TwoCharHexString s) = parse byte "" s  `shouldParse` s
+```
+This is simply a function called `prop_byte_parse` which takes a value of type
+`TwoCharHexString` runs the parser `byte` with the megaparsec `parse` function [^2] and
+checks that the result is as expected, in this case parsing a string `s` should return that
+same string.
+
+Now lets add this to our spec:
+
+```{.haskell}
+asmSpec = do
+  describe "byte" $
+    it "should parse two consecutive characters in the hex range into a two character string" $
+      property prop_byte_parse
+```
+Running the tests with `stack test` will run this spec and check that the `prop_byte_parse`
+holds under the random values of `TwoCharHexString` that quickcheck produces.
+
+I've left out necessary dependencies and some boiler plate in this example, but
+you can see the full code [here]().
+
+# The Full Parser
+
 
 ```{.haskell}
 {-# LANGUAGE OverloadedStrings #-}
@@ -196,4 +308,5 @@ lexeme :: Parser a -> Parser a
 lexeme = L.lexeme spaceEater
 ```
 
-
+[^1]: See the documentation for
+[Arbitrary](https://hackage.haskell.org/package/QuickCheck-2.9.2/docs/Test-QuickCheck-Arbitrary.html), this [StackOverflow answer](https://hackage.haskell.org/package/QuickCheck-2.9.2/docs/Test-QuickCheck-Arbitrary.html) is also good.
