@@ -1,6 +1,6 @@
 ---
 title: Building An Assembler In Haskell
-tags:
+tags: haskell, emulator
 ---
 
 # MOS Tech 6502

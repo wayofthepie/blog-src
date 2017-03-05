@@ -1,6 +1,6 @@
 ---
 title: "January Week 3: JS, Haskell"
-tags: weekly
+tags: haskell, js
 ---
 
 # Vulgr UI - React
