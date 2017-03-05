@@ -148,6 +148,8 @@ type `Text` to denote strings instead of the built-in `String` in this post [^2]
 Looking back at our grammar we have eight symbols, each one can be represented as a
 function which is itself a parser for some subset of the grammar. So the _top-level_
 functions in this case would be the _symbols_ in our grammar - `<expression>`, `<label>` etc...
+We'll also add an extra function here for parsing label assignment - labels with a ":"
+after them as in the first part of `<instruction>` - let's call it `labelAssign`.
 
 
 ```{.haskell}
