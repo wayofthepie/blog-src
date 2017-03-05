@@ -3,12 +3,6 @@ title: "January Week 3: JS, Haskell"
 tags: weekly
 ---
 
-# Nothing Specific
-I keep saying to myself "I'll write a blog post on _x_ this week", it rarely happens. So instead, I'm going
-to do a short braindump each weekend. At least this way I will have a written post _and_ will have some reference
-to what I did in the past. Hopefully, this will give me a bit more drive to write and I'll
-go finish the posts I've been meaning to do!
-
 # Vulgr UI - React
 Vulgr is a project I've been working on, on and off, for a while. The goal is to build a
 dependency analysis platform - analyze your `gradle`/`node`/`whatever` dependencies to see
@@ -210,21 +204,6 @@ Looks good.
 ```
 Success! Lots to improve, but a good start. I'll do a more in-depth post on this once it
 matures.
-
-# Work Stuff
-Formed a new team, started a new feature around re-designing the landing page/user dashboard
-for our platform. UI design is not really something I have a big drive for, but since I've
-been using `react` and `material` on my own projects (Vulgr) it's interesting to see other
-peoples take on what makes a good system.
-
-It's also interesting to see how `Angular`/`bootstrap`,
-which we use at work, compare to `react`/`material` - I know you can't really compare
-`Angular` and `react`, one being an entire framework, the other just a layout library.
-But, perhaps there is something there for a post.
-
-# Next Week
-I have post on using Nix for development environments which has been sitting there for
-months... I will finish this!
 
 [^1]: See <https://criu.org/RPC> for more information.
 [^2]: It's also on hackage, <https://hackage.haskell.org/package/criu-rpc-types-0.0.0.1>,

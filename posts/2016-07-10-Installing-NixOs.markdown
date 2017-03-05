@@ -3,7 +3,7 @@ title: Installing NixOs
 tags: nix, nixos, systems
 ---
 # Introduction
-I've recently started diving into _[Nix](https://nixos.org/nix/)_ and 
+I've recently started diving into _[Nix](https://nixos.org/nix/)_ and
 _[NixOS](https://nixos.org/)_. __Nix__ is a package manager for Linux/Unix systems, a
 quick description from its own site:
 
@@ -44,23 +44,23 @@ These are not requirements, but will make the post easier to follow.
 
 # Partition
 Let's start! First boot into NixOs, whether from USB or the CD installer,
-and find the disk you wish to install onto. 
-I  will use __/dev/sda__ in this post, you can replace this 
-with whatever disk you are going to use.   
+and find the disk you wish to install onto.
+I  will use __/dev/sda__ in this post, you can replace this
+with whatever disk you are going to use.
 
-The system will boot with UEFI so __gdisk__ should be used to create the 
+The system will boot with UEFI so __gdisk__ should be used to create the
 partitions. This will create a GPT (GUID Partition Table) formatted disk.
 
 With __gdisk__ create the following partitions:
 
 | Partition | Size | Type               | Code | Filesystem|
 |-----------|------|--------------------|------|-----------|
-| /dev/sda1 | 2 MiB | _Bios Boot Partition_ |ef02 |None | 
-| /dev/sda2 | 1024 MiB | *EFI* | ef00 | vfat | 
+| /dev/sda1 | 2 MiB | _Bios Boot Partition_ |ef02 |None |
+| /dev/sda2 | 1024 MiB | *EFI* | ef00 | vfat |
 | /dev/sda3 | 119 GiB | _Linux LVM_  | 8e00 | xfs |
 
 If you have never used __gdisk__ before, fear not! Just run `gdisk /dev/sda`{.bash}
-and answer the questions as outlined in the next section. If you know what you are 
+and answer the questions as outlined in the next section. If you know what you are
 doing, you can skip the next section.
 
 ## Creating Partitions With gdisk
@@ -79,24 +79,24 @@ Creating new GPT entries.
 
 Command (? for help): n
 Partition number (1-128, default 1): 1
-First sector (34-251658206, default = 2048) or {+-}size{KMGTP}: 
+First sector (34-251658206, default = 2048) or {+-}size{KMGTP}:
 Last sector (2048-251658206, default = 251658206) or {+-}size{KMGTP}: +2M
 Current type is 'Linux filesystem'
 Hex code or GUID (L to show codes, Enter = 8300): ef02
 Changed type of partition to 'BIOS boot partition'
 
 Command (? for help): n
-Partition number (2-128, default 2): 
-First sector (34-251658206, default = 6144) or {+-}size{KMGTP}: 
+Partition number (2-128, default 2):
+First sector (34-251658206, default = 6144) or {+-}size{KMGTP}:
 Last sector (6144-251658206, default = 251658206) or {+-}size{KMGTP}: +1G
 Current type is 'Linux filesystem'
 Hex code or GUID (L to show codes, Enter = 8300): ef00
 Changed type of partition to 'EFI System'
 
 Command (? for help): n
-Partition number (3-128, default 3): 
-First sector (34-251658206, default = 2103296) or {+-}size{KMGTP}: 
-Last sector (2103296-251658206, default = 251658206) or {+-}size{KMGTP}: 
+Partition number (3-128, default 3):
+First sector (34-251658206, default = 2103296) or {+-}size{KMGTP}:
+Last sector (2103296-251658206, default = 251658206) or {+-}size{KMGTP}:
 Current type is 'Linux filesystem'
 Hex code or GUID (L to show codes, Enter = 8300): 8e00
 Changed type of partition to 'Linux LVM'
@@ -112,17 +112,17 @@ The operation has completed successfully.
 ```
 
 In the above, we begin creating our first  new partition by using the command __n__ when asked the
-question `Command (? for help):`{.bash}. 
+question `Command (? for help):`{.bash}.
 
-The first question we are asked is what number we would like to give, it's our 
-first partition so __1__, this will create a partition called __/dev/sda1__ 
-on __/dev/sda__. 
+The first question we are asked is what number we would like to give, it's our
+first partition so __1__, this will create a partition called __/dev/sda1__
+on __/dev/sda__.
 
 Next, we are asked what sector to start on and what sector to end on. The starting
 sector can be left empty - this means start at next unused sector, which in this
-case is the start of the disk. As for which sector to end on, here we answer __+2M__ 
-which will means _move 2 Mebibytes [^1] (__MiB__) forward from the starting sector_, 
-giving us a partition size of 2 Mebibytes. 
+case is the start of the disk. As for which sector to end on, here we answer __+2M__
+which will means _move 2 Mebibytes [^1] (__MiB__) forward from the starting sector_,
+giving us a partition size of 2 Mebibytes.
 
 Finally, we are asked if we want to change the type of the partition. Our first
 partition should have the type __ef02__, more on why later.
@@ -161,13 +161,13 @@ Number  Start (sector)    End (sector)  Size       Code  Name
 ```
 
 ### Grub Compatibility: /dev/sda1
-This is used by __grub__ [^2] at boot-time when booting off a GPT disk. 
+This is used by __grub__ [^2] at boot-time when booting off a GPT disk.
 
 ### EFI Partition: /dev/sda2
 UEFI will load files stored in this partition when booting.
 
 ### Main Data Partition: /dev/sda3
-This is used for creating the logical volumes __swap__ (4GB), __/__ (20GB), 
+This is used for creating the logical volumes __swap__ (4GB), __/__ (20GB),
 __/home__ (20GB) and __/opt__ (20GB) in this post, it's size should reflect
 the sum of the sizes of all logical volumes you wish to create. Note that
 any free space left of the disk can be used later, and those logical
@@ -180,7 +180,7 @@ __/dev/sda3__. This is optional and there are a few ways to do it, this post use
 _[LUKS](https://guardianproject.info/code/luks/)_.
 
 The _[cryptsetup](https://gitlab.com/cryptsetup/cryptsetup)_ tool is used to
-create __LUKS__ volumes. To search nix packages the command `nix-env -qaP packageName`{.bash} [^3] 
+create __LUKS__ volumes. To search nix packages the command `nix-env -qaP packageName`{.bash} [^3]
 can be used:
 
 ```bash
@@ -213,13 +213,13 @@ WARNING!
 This will overwrite data on /dev/sda3 irrevocably.
 
 Are you sure? (Type uppercase yes): YES
-Enter passphrase: 
-Verify passphrase: 
+Enter passphrase:
+Verify passphrase:
 Command successful.
 
 ```
 
-__/dev/sda3__ is now encrypted! [^4] The options passed to _cryptsetup_ have 
+__/dev/sda3__ is now encrypted! [^4] The options passed to _cryptsetup_ have
 the following meaning:
 
 * __-y__ : prompt for passphrase twice.
@@ -228,14 +228,14 @@ the following meaning:
   passphrase (for key-slot 0) [^5].
 
 Great, we now have an encrypted disk, but how is it used? Let's jump back to
-__cryptsetup__, it has a command  `cryptsetup luksOpen LUKS_DEVICE NAME`{.bash} 
-which, when it verifies the passphrase (in our case), will open the __LUKS__ 
+__cryptsetup__, it has a command  `cryptsetup luksOpen LUKS_DEVICE NAME`{.bash}
+which, when it verifies the passphrase (in our case), will open the __LUKS__
 device and create a mapping to it (on the path __/dev/mapper/NAME__)from the given name.
 
 ```bash
 $ cryptsetup luksOpen /dev/sda3 enc-data
 
-Enter passphrase for /dev/sda3: 
+Enter passphrase for /dev/sda3:
 
 $ ls -la /dev/mapper/
 total 0
@@ -250,10 +250,10 @@ left to do is setup logical volumes on the partition.
 
 # LVM Setup
 Make sure our data partition - __/dev/sda3__ - is open and mapped to the path
-__/dev/mapper/enc-data__ with __luksOpen__, as mentioned above. 
+__/dev/mapper/enc-data__ with __luksOpen__, as mentioned above.
 
 There are three steps to setting up _logical volumes_, creating a _physical volume_
-(PV), a _volume group_ (VG) and a _logical volume_ (LV). If you are unfamiliar with 
+(PV), a _volume group_ (VG) and a _logical volume_ (LV). If you are unfamiliar with
 Logical Volume Management (LVM) the [Arch Linux Wiki
 entry](https://wiki.archlinux.org/index.php/LVM) is a good resource.
 
@@ -266,12 +266,12 @@ logical volumes are created within volume groups.
 to create a physical volume on __/dev/mapper/enc-data__:
 
 ```bash
-$ pvcreate /dev/mapper/enc-data 
+$ pvcreate /dev/mapper/enc-data
 
 Physical volume "/dev/mapper/enc-data" successfully created
 ```
 
-`pvdisplay`{.bash} is used to display information on physical volumes on the 
+`pvdisplay`{.bash} is used to display information on physical volumes on the
 system.
 
 ```bash
@@ -280,10 +280,10 @@ $ pvdisplay
 "/dev/mapper/enc-data" is a new physical volume of "119.00 GiB"
 --- NEW Physical volume ---
 PV Name               /dev/mapper/enc-data
-VG Name               
+VG Name
 PV Size               119.00 GiB
 Allocatable           NO
-PE Size               0   
+PE Size               0
 Total PE              0
 Free PE               0
 Allocated PE          0
@@ -308,7 +308,7 @@ $ vgdisplay
 
 --- Volume group ---
 VG Name               vg
-System ID             
+System ID
 Format                lvm2
 Metadata Areas        1
 Metadata Sequence No  1
@@ -323,7 +323,7 @@ Act PV                1
 VG Size               118.99 GiB
 PE Size               4.00 MiB
 Total PE              30462
-Alloc PE / Size       0 / 0   
+Alloc PE / Size       0 / 0
 Free  PE / Size       30462 / 118.99 GiB
 VG UUID               O9EIaS-kX9Y-EXjo-I3zU-mPXY-9SVB-br2fEy
 ```
@@ -339,8 +339,8 @@ lvcreate -n home --size 20G vg
 lvcreate -n opt --size 20G vg
 ```
 
-Running the above four lvcreate commands will give us our logical volumes __swap__, 
-__root__, __home__ and __opt__. Use `lvdisplay`{.bash} to get more info on 
+Running the above four lvcreate commands will give us our logical volumes __swap__,
+__root__, __home__ and __opt__. Use `lvdisplay`{.bash} to get more info on
 them:
 
 ```bash
@@ -362,7 +362,7 @@ Allocation             inherit
 Read ahead sectors     auto
 - currently set to     256
 Block device           254:1
- 
+
 --- Logical volume ---
 LV Path                /dev/vg/root
 LV Name                root
@@ -379,7 +379,7 @@ Allocation             inherit
 Read ahead sectors     auto
 - currently set to     256
 Block device           254:2
- 
+
 --- Logical volume ---
 LV Path                /dev/vg/home
 LV Name                home
@@ -396,7 +396,7 @@ Allocation             inherit
 Read ahead sectors     auto
 - currently set to     256
 Block device           254:3
- 
+
 --- Logical volume ---
 LV Path                /dev/vg/opt
 LV Name                opt
@@ -418,14 +418,14 @@ Block device           254:4
 Ok! That's our disk setup ~90% complete.
 
 #Final Disk Setup
-All we have left to do now is format the boot partition and our logical volumes 
+All we have left to do now is format the boot partition and our logical volumes
 and we ca start preparing NixOs for install. The formatting can be done with a short
 script:
 
 ```bash
 mkfs.vfat -n BOOT /dev/sda2
 mkswap -L swap /dev/vg/swap
-for lv in root home opt; do 
+for lv in root home opt; do
   mkfs.xfs -L $lv /dev/vg/$lv
 done
 ```
@@ -434,13 +434,13 @@ This formats __/dev/sda2__ with vfat and labels it __BOOT__, sets up a swap area
 on our LV  __/dev/vg/swap__ and finally formats our LV's __/dev/vg/root__, __/dev/vg/home__
 and __/dev/vg/opt__ with __xfs__.
 
-Awesome! Disk setup is now 100% complete! 
+Awesome! Disk setup is now 100% complete!
 
 # Install NixOS
 Now that our disk is ready we can prepare to install NixOs, this is pretty
-short, and sweet. 
+short, and sweet.
 
-First, we need to create the directories __/mnt/boot__, __/mnt/home__ and 
+First, we need to create the directories __/mnt/boot__, __/mnt/home__ and
 __/mnt/opt__. Then, we need to mount our LV's - that we created in the previous
 section - and our boot partition:
 
@@ -452,7 +452,7 @@ mount /dev/vg/opt /mnt/opt
 mount /dev/sda2 /mnt/boot
 ```
 
-Before we install NixOs, we have to run `nixos-generate-config 
+Before we install NixOs, we have to run `nixos-generate-config
 --root /mnt/`{.bash} [^6]:
 
 ```bash
@@ -493,20 +493,13 @@ nixos-install
 This can take some time, you should see information on what packages are being
 downloaded and installed while the installation is running. You will be prompted
 to enter the __root__ password during the installationi, once you do that the
-installation has completed and you can boot up your new NixOs install! [^7] 
+installation has completed and you can boot up your new NixOs install! [^7]
 
 # Conclusion
 The aim of this post was just to get NixOs installed, using the steps I used
-on my own system. I plan on doing some more posts on Nix and NixOs over the
-coming weeks, with the overall goal being to gain a better understanding of
-both.
+on my own system. I plan on doing some more posts on Nix and NixOs once I get some time to
+dive deeper into them.
 
-Once I have that, I'll start diving into more interesting topics like NixOps and
-the use of the three in Configuration Management across multiple connected
-systems.
-
-Next post will be on the use of Nix in setting up a development environment
-in multiple languages, stay tuned!
 
 [^1]: 1 MiB = 2<sup>20</sup> bytes = 1024 kibibytes = 1048576 bytes.
 [^2]: See [Arch Linux - Grub GPT](
@@ -524,6 +517,6 @@ sha256, RNG: /dev/urandom_.
 for more information.
 [^6]: For more info on `nixos-generate-config`{.bash} see Section 10 of the [Nix
 Install Manual](https://nixos.org/nixos/manual/#sec-installation).
-[^7]: When the system boots you will be asked for a password _before_ the login prompt, 
+[^7]: When the system boots you will be asked for a password _before_ the login prompt,
 this is the password you used to create the LUKS volume.
- 
+
