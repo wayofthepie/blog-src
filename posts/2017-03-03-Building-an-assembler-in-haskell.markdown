@@ -248,10 +248,10 @@ checks that the result is as expected, in this case parsing a string `s` should 
 same string. `parse` is a function from the _megaparsec_ package which runs our parser on the
 supplied string.
 
-Finally, `shouldParse` is a functoin from
+Finally, `shouldParse` is a function from
 [hspec-megaparsec](https://hackage.haskell.org/package/hspec-megaparsec) - a library
-containing utility functions for testing parsers build with megaparsec. Here are using it to
-say `parse byte "" s` should parse to the string `s` - so the `byte` parser run on string `s` should
+containing utility functions for testing parsers build with megaparsec. Here we are using it to
+say `parse byte "" s` should parse to the string `s` - meaning the `byte` parser run on string `s` should
 just give us back `s`.
 
 Let's add this to our spec so the property check gets run when we launch `stack test`.
@@ -267,7 +267,7 @@ holds under the random values of `TwoCharHexString` that quickcheck produces - w
 ourselves defined in our `Arbitrary` instance.
 
 But wait! The `byte` function was `undefined` so the test should fail! Yip, it should give
-output similar to the following..
+output similar to the following.
 
 ```
 Progress: 1/2
@@ -323,7 +323,8 @@ value.
 The rest of the parsers can be implemented in a similar way, define `Arbitrary` instances
 for the data they should take, define properties for the expected output and implement!
 
-I'll leave this implementation for another post. Running `stack test` now should give the following output.
+I'll leave the rest of the implementation for another post. Running `stack test` now
+should give the following output.
 
 ```
 ...
