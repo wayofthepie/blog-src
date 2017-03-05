@@ -6,7 +6,14 @@ tags: haskell, emulator
 # MOS Tech 6502
 Recently I started building an emulator for the MosTech 6502 Cpu, this post is
 about the initial stages of building an assembler for a simple assembly language
-that compiles to runnable 6502 machine code.
+that compiles to runnable 6502 machine code. I've created a repo and updated it as I wrote
+this post, so the the end of each section that introduces new code I'll link to a commit
+which has the code up to that point.
+
+You can see the repo here:
+<https://github.com/wayofthepie/emu-mos6502-asm-blog>. The only pre-requisite is installing
+[stack](https://docs.haskellstack.org/en/stable/README/#how-to-install), once the project is
+cloned you can use `stack install` to install dependencies and build the project.
 
 # The Language
 First, let's define what we want our assembly language to be able to do. To keep it simple,
@@ -80,7 +87,7 @@ STA $22
 notequal: BRK
 ~~~
 
-And the machine code this compiles to:
+And the machine code this compiles to [^1]:
 
 ~~~{.no-highlight}
 a9 01 c9 02 d0 02 85 22 00
@@ -137,7 +144,9 @@ data Expr
 Most of the values will just be strings (`Text` types) so to distinguish between them we
 wrap `Text` in a `newtype` wrapper for each type we care about.
 For now we're not going to worry about constructing anything other than strings (I'll be using the
-type `Text` to denote strings instead of the built-in `String` in this post [^1]). The _top-level_
+type `Text` to denote strings instead of the built-in `String` in this post [^2]).
+Looking back at our grammar we have eight symbols, each one can be represented as a
+function which is itself a parser for some subset of the grammar. So the _top-level_
 functions in this case would be the _symbols_ in our grammar - `<expression>`, `<label>` etc...
 
 
@@ -181,11 +190,9 @@ To build the parser I'm going to use a parser combinator library called
 won't go into much detail on megaparsec or parser combinators in this post, simply put,
 parser combinators are a way of building more complex parsers by combining parsers.
 
-Looking back at our grammar we have eight symbols, each one can be represented as a
-function which is itself a parser for some subset of the grammar. The simplest parser
-above would be `byte`, from our grammar this is just a two character hexadecimal string.
-Before we start implementing it, let's write a property which encodes what we expect
-it to do.
+The simplest parser above would be `byte`, from our grammar this is just a two character
+hexadecimal string. Before we start implementing it, let's write a property which encodes
+what we expect it to do.
 
 ### Generating Our Data - QuickCheck Arbitrary
 Using QuickCheck to test parsers is really simple and quite powerful. It involves writing
@@ -193,7 +200,7 @@ properties which encode expectations about the ouput of a function given some in
 
 To build a property for `byte` first we need to create  an
 [Arbitrary](https://hackage.haskell.org/package/QuickCheck-2.9.2/docs/Test-QuickCheck-Arbitrary.html#t:Arbitrary)
-instance [^2] for
+instance [^3] for
 the data it expects - two character hexadecimal strings. Creating an instance of `Arbitrary`
 for a type allows random values of that type to be generated, by default
 QuickCheck will generate 100 random values of the type each test run. For `byte` this might look
@@ -222,7 +229,7 @@ Then we create an `Arbitrary` instance for this type which builds two character 
     1 and 4 inclusive.
   * [elements](https://hackage.haskell.org/package/QuickCheck-2.9.2/docs/Test-QuickCheck-Gen.html#v:elements)
     generates a single value from the given list.
-  * With these functions we case generate `x` and `y`, as we do above, and build our two character
+  * With these functions we can generate `x` and `y` and build our two character
     string by building a list of characters made up of `x` and `y` - see `x:[y]` above, this is just a
     `String` - we then pack this with `T.pack` to get our `Text` value.
 
@@ -234,10 +241,16 @@ string values.
 prop_byte_parse (TwoCharHexString s) = parse byte "" s  `shouldParse` s
 ```
 This is simply a function called `prop_byte_parse` which takes a value of type
-`TwoCharHexString` runs the parser `byte` with the megaparsec `parse` function [^3] and
+`TwoCharHexString` runs the parser `byte` with the megaparsec `parse` function [^4] and
 checks that the result is as expected, in this case parsing a string `s` should return that
 same string. `parse` is a function from the _megaparsec_ package which runs our parser on the
 supplied string.
+
+Finally, `shouldParse` is a functoin from
+[hspec-megaparsec](https://hackage.haskell.org/package/hspec-megaparsec) - a library
+containing utility functions for testing parsers build with megaparsec. Here are using it to
+say `parse byte "" s` should parse to the string `s` - so the `byte` parser run on string `s` should
+just give us back `s`.
 
 Let's add this to our spec so the property check gets run when we launch `stack test`.
 
@@ -283,9 +296,11 @@ Finished in 0.0023 seconds
 
 ```
 Good, now we can implement `byte`. I've deliberatly left out some boiler plate such as dependencies
-and test setup, but you can view the full code up to this point
-[here](https://github.com/wayofthepie/emu-mos6502-asm-blog/tree/ff2c770ec79dc1b56446b80cff28c6bfc87ca57a).
-
+and test setup, but you can view the full code up to this point, see
+[Assembler.hs](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/ff2c770ec79dc1b56446b80cff28c6bfc87ca57a/src/Assembler.hs)
+for the types and functions and
+[AssemblerSpec.hs](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/ff2c770ec79dc1b56446b80cff28c6bfc87ca57a/test/AssemblerSpec.hs)
+for the the tests.
 
 ### Implementation
 So now that we have a property which defines what our `byte` function should do, we can
@@ -306,9 +321,7 @@ value.
 The rest of the parsers can be implemented in a similar way, define `Arbitrary` instances
 for the data they should take, define properties for the expected output and implement!
 
-I'll leave this implementation for another post. You can check out the code up to this point
-[here](https://github.com/wayofthepie/emu-mos6502-asm-blog/tree/90ccef30de0aac6cc0f74df4e688d392c4607846).
-Running `stack test` now should give the following output.
+I'll leave this implementation for another post. Running `stack test` now should give the following output.
 
 ```
 ...
@@ -320,17 +333,19 @@ Finished in 0.0016 seconds
 1 example, 0 failures
 ...
 ```
-Excellent, our implementation passed the property check!
+Excellent, our implementation passed the property check! You can check out the code up to this point
+[here](https://github.com/wayofthepie/emu-mos6502-asm-blog/tree/90ccef30de0aac6cc0f74df4e688d392c4607846).
+
 
 # Conclusion
-I'll leave this post here. I think it's long enough! In the next post we'll create the rest
+This is where I'll leave this post. I think it's long enough! In the next post we'll create the rest
 of the parsers and their properties, and also run through _megaparsec_ in some more detail.
 There are definitely quite a few improvements that can be added to the language,
 and plenty more features that would be useful to have which we can implement in the
 future.
 
 There are also some limitations in the grammar, for example it currently does not allow
-`X` or `Y` indexed addressing [^4] - e.g. `LDA ($2020,X)` - we can address these too.
+`X` or `Y` indexed addressing [^5] - e.g. `LDA ($2020,X)` - we can address these too.
 
 This post outlines what I have done so far when building the assembler, and really just
 shows my own thought process around designing and implementing. Im actively working on the
@@ -338,10 +353,12 @@ shows my own thought process around designing and implementing. Im actively work
 process in implementing the project, hopefully I'll introduce some bugs or have some
 interesting issues along the way!
 
-[^1]: [Haskell String Types](http://www.alexeyshmalko.com/2015/haskell-string-types/) is a
+[^1]: The reference I'm using for the emulator is mainly
+<http://obelisk.me.uk/6502/reference.html>.
+[^2]: [Haskell String Types](http://www.alexeyshmalko.com/2015/haskell-string-types/) is a
 good post detailing the different string types.
-[^2]: See the documentation for
+[^3]: See the documentation for
 [Arbitrary](https://hackage.haskell.org/package/QuickCheck-2.9.2/docs/Test-QuickCheck-Arbitrary.html), this [StackOverflow answer](https://stackoverflow.com/questions/16440208/how-to-generate-arbitrary-instances-of-a-simple-type-for-quickcheck) is also good.
-[^3]: See the documentation for [parse](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:parse).
-[^4]: See Indexed Indirect, and Indirect Indexed addressing modes
+[^4]: See the documentation for [parse](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:parse).
+[^5]: See Indexed Indirect, and Indirect Indexed addressing modes
 [here](http://www.obelisk.me.uk/6502/addressing.html).
