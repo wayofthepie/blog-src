@@ -7,7 +7,7 @@ tags: haskell, emulator
 Recently I started building an emulator for the MosTech 6502 Cpu, this post is
 about the initial stages of building an assembler for a simple assembly language
 that compiles to runnable 6502 machine code. I've created a repo and updated it as I wrote
-this post, so the the end of each section that introduces new code I'll link to a commit
+this post, so at the end of most sections that introduce new code I'll link to a commit
 which has the code up to that point.
 
 You can see the repo here:
@@ -126,11 +126,11 @@ data Operand = Operand IsImmediate T.Text deriving Show
 -- | A three letter upper case string.
 newtype Mnemonic = Mnemonic T.Text deriving Show
 
--- | A label, which must be assigned a value.
+-- | A label, which should be assigned a value.
 newtype Var = Var Label  deriving Show
 
--- | An operand which must be assigned to a label.
-newtype Val = Val Operand deriving Show
+-- | A value, which should be assigned to a Var.
+newtype Val = Val T.Text deriving Show
 
 -- | Either a label or an operand.
 data LabelOrOperand = Lbl Label | Op Operand deriving Show
@@ -232,8 +232,9 @@ Then we create an `Arbitrary` instance for this type which builds two character 
   * [elements](https://hackage.haskell.org/package/QuickCheck-2.9.2/docs/Test-QuickCheck-Gen.html#v:elements)
     generates a single value from the given list.
   * With these functions we can generate `x` and `y` and build our two character
-    string by building a list of characters made up of `x` and `y` - see `x:[y]` above, this is just a
-    `String` - we then pack this with `T.pack` to get our `Text` value.
+    string by building a two element list of characters made up of `x` and `y` -
+    see `x:[y]` above, this is just a `String` which is a list of `Char` - we then pack this
+    with `T.pack` to get our `Text` value.
 
 ### Building Our Property
 Next we need to write a property that defines what should happen when `byte` parses these
@@ -250,7 +251,7 @@ supplied string.
 
 Finally, `shouldParse` is a function from
 [hspec-megaparsec](https://hackage.haskell.org/package/hspec-megaparsec) - a library
-containing utility functions for testing parsers build with megaparsec. Here we are using it to
+containing utility functions for testing parsers built with megaparsec. Here we are using it to
 say `parse byte "" s` should parse to the string `s` - meaning the `byte` parser run on string `s` should
 just give us back `s`.
 
@@ -263,14 +264,14 @@ asmSpec = do
       property prop_byte_parse
 ```
 Running the tests with `stack test` will run this spec and check that the property `prop_byte_parse`
-holds under the random values of `TwoCharHexString` that quickcheck produces - which we
-ourselves defined in our `Arbitrary` instance.
+holds when parsing the random values of `TwoCharHexString` that quickcheck produces - which we
+defined in our `Arbitrary` instance.
 
 But wait! The `byte` function was `undefined` so the test should fail! Yip, it should give
 output similar to the following.
 
 ```
-Progress: 1/2
+...
 Assembler
   byte
     should parse two consecutive characters in the hex range into a two character string FAILED [1]
@@ -295,14 +296,14 @@ Randomized with seed 1913513661
 
 Finished in 0.0023 seconds
 1 example, 1 failure
-
+...
 ```
 Good, now we can implement `byte`. I've deliberatly left out some boiler plate such as dependencies
 and test setup, but you can view the full code up to this point, see
 [Assembler.hs](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/ff2c770ec79dc1b56446b80cff28c6bfc87ca57a/src/Assembler.hs)
 for the types and functions and
 [AssemblerSpec.hs](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/ff2c770ec79dc1b56446b80cff28c6bfc87ca57a/test/AssemblerSpec.hs)
-for the the tests.
+for the the property and `Arbitrary` instance.
 
 ### Implementation
 So now that we have a property which defines what our `byte` function should do, we can
@@ -320,7 +321,7 @@ byte = do
 Nice! We read a hex char and call it `high` and another called `low` and build a `Text`
 value.
 
-The rest of the parsers can be implemented in a similar way, define `Arbitrary` instances
+The rest of the parsers can be implemented in a similar way - define `Arbitrary` instances
 for the data they should take, define properties for the expected output and implement!
 
 I'll leave the rest of the implementation for another post. Running `stack test` now
