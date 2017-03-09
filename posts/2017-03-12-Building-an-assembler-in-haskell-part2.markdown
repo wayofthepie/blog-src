@@ -44,6 +44,7 @@ space :: MonadParsec e s m
       -> m () -- ^ A parser for a block comment (e.g. 'skipBlockComment')
       -> m ()
 ```
+
 The first argument is a parser for space, we use `void spaceChar` here.
 [spaceChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Char.html#v:spaceChar)
 parses a space character, and
@@ -60,9 +61,47 @@ The last argument is a block comment parser, here we use
 [skipBlockComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipBlockComment).
 which parses and discards data between "/*" and "*/".
 
-Finally we create a function called `lexeme` which uses [lexeme]() from _megaparsec_ to
+Using `spaceEater` we create a function called `lexeme` which uses [lexeme]() from _megaparsec_ to
 build a function that takes a parser and produces a parser which consumes trailing
 whitespace and comments, with our `spaceEater`.
+
+I left out the description of the
+[MonadParsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:MonadParsec)
+typeclass, let's digress for a second and jump into the types. It's not super important
+right now, so you can skip this.
+
+### Quick Jump Into The Parser Types
+The
+[MonadParsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:MonadParsec)
+typeclass defines some general combinators
+(
+[try](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#v:try),
+[lookahead](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#v:lookAhead),
+etc...
+), it's type variables `e`, `s` and `m` correspond to instances of the following:
+
+  * `e` : [ErrorComponent](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Error.html#t:ErrorComponent)
+  * `s` : [Stream](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:Stream)
+  * `m` : [MonadPlus]() _and_ [Alternative]()
+
+These instances come from our `Parser` type, which we
+[defined](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/e454cce2af3c938e229f1d60a2f3c3d0bf3a3adb/src/Assembler.hs#L8)
+as:
+
+```{.haskell}
+type Parser = Parsec Dec T.Text
+```
+This gives us: `e` is `Dec`, `s` is `Text` and `m` is `Identity`. `Parsec Dec T.Text` (see
+[Parsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:Parsec)
+) is a type synonym for `ParsecT Dec Text Identity`, and
+[ParsecT](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:ParsecT)
+has the type:
+
+```{.haskell}
+data ParsecT e s m a
+```
+So wherever you see the type `Parser a` in our code it is a synonym for
+`ParsecT Dec Text Identity a`.
 
 ## bytes
 The `bytes` parser parses two bytes, the second being optional. We can use our single
@@ -108,15 +147,14 @@ Here we also do a few new things. `T.pack` is `pack` from `Data.Text`, it packs 
 into a `Text` value. `Mnemonic` is the constructor for our `newtype` which we defined in the
 last post - `newtype Mnemonic = Mnemonic T.Text deriving Show`.
 
-
 `lexeme` we defined above, it eats trailing whitespace and comments.
 Finally `<$>` is the infix synonym for `fmap`, which applies a
 function over a
-[Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html#t:Functor) [^2].
+[Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html#t:Functor) [^1].
 
 Putting this all together, `lexeme $ Mnemonic . T.pack <$> mnem` gives us a function which
 parses three upper case characters as a `String`, we then map `Mnemonic . T.pack` over the
 value that `mnem` parses which packs it into a `Text` value and builds a
-`Mnemonic` from that value, finally it consumes whitespace after the three characters.
+`Mnemonic` from that value, finally it consumes whitespace or comments after the three characters.
 
-
+[^1]: Hmmm?
