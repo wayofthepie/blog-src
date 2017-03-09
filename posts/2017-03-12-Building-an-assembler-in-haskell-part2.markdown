@@ -13,10 +13,10 @@ In this post I want to dive deeper into megaparsec, fully implement the language
 spec'd and finally improve it.
 
 # Implementing The Rest Of Our Parsers
-
-1. FIXME : Talk about tokens, lexemes, whitespace, comments etc....
-2. Add support for comments
-3. Implement with properties for each parser also
+The _lexemes_ of a language are the smallest syntactic unit. _Tokens_ are categories of
+_lexemes_. In our case, _STORE_ is a lexeme in the category of _label_ tokens. Before we
+continue implementing the parsers for our language, let's create convenience functions for
+parsing trailing space after our lexemes.
 
 ## Lexemes And Space
 ```{.haskell}
@@ -28,8 +28,41 @@ spaceEater = L.space
 
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme spaceEater
-
 ```
+`spaceEater` uses _megaparsec's_
+[space](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:space)
+function to build a parser that consumes and discards whitespace and comments. Note that it is
+prefixed with `L.` here (`L.space`) because `Text.Megaparsec.Lexer` is imported qualified as
+`L`, see [here](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/e454cce2af3c938e229f1d60a2f3c3d0bf3a3adb/src/Assembler.hs#L6).
+
+Here is what the type for `space` looks like:
+
+```{.haskell}
+space :: MonadParsec e s m
+      => m () -- ^ A parser for a space character (e.g. @'void' 'C.spaceChar'@)
+      -> m () -- ^ A parser for a line comment (e.g. 'skipLineComment')
+      -> m () -- ^ A parser for a block comment (e.g. 'skipBlockComment')
+      -> m ()
+```
+The first argument is a parser for space, we use `void spaceChar` here.
+[spaceChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Char.html#v:spaceChar)
+parses a space character, and
+[void](https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Functor.html#v:void)
+discards the parsed character.
+
+The second argument is a line comment parser. We use a function from
+_megaparsec_ called
+[skipLineComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipLineComment),
+which does what it says - skips line comments starting with the provided character, ";" in
+our case.
+
+The last argument is a block comment parser, here we use
+[skipBlockComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipBlockComment).
+which parses and discards data between "/*" and "*/".
+
+Finally we create a function called `lexeme` which uses [lexeme]() from _megaparsec_ to
+build a function that takes a parser and produces a parser which consumes trailing
+whitespace and comments, with our `spaceEater`.
 
 ## bytes
 The `bytes` parser parses two bytes, the second being optional. We can use our single
@@ -76,11 +109,14 @@ into a `Text` value. `Mnemonic` is the constructor for our `newtype` which we de
 last post - `newtype Mnemonic = Mnemonic T.Text deriving Show`.
 
 
-`lexeme` we defined above. Finally `<$>` is the infix synonym for `fmap`, which applies a
+`lexeme` we defined above, it eats trailing whitespace and comments.
+Finally `<$>` is the infix synonym for `fmap`, which applies a
 function over a
 [Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html#t:Functor) [^2].
 
 Putting this all together, `lexeme $ Mnemonic . T.pack <$> mnem` gives us a function which
 parses three upper case characters as a `String`, we then map `Mnemonic . T.pack` over the
-value mnem parses which packs it into a `Text` value and builds a
+value that `mnem` parses which packs it into a `Text` value and builds a
 `Mnemonic` from that value, finally it consumes whitespace after the three characters.
+
+
