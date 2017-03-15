@@ -20,5 +20,6 @@ executable blog
   build-depends:       base == 4.*,
                        bytestring,
                        hakyll == 4.9.*,
+                       pandoc,
                        hjsmin,
                        tagsoup

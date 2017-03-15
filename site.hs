@@ -4,6 +4,7 @@ import           Data.Monoid (mappend)
 import           Hakyll
 import qualified Text.HTML.TagSoup      as TS
 import           Text.Jasmine
+import           Text.Pandoc.Options
 import           Data.List(partition)
 import qualified Data.ByteString.Lazy.Char8 as C
 import qualified GHC.IO.Encoding as E
@@ -111,9 +112,15 @@ addClass _ tag = tag
 
 -- | Custom post compiler which adds the classes "table" and "table-striped" to all table elements.
 postCompiler :: Compiler (Item String)
-postCompiler = fmap (withTags process) `fmap` pandocCompiler
+postCompiler = fmap (withTags process) `fmap` pandocCompilerWith defaultHakyllReaderOptions customWriterOptions
   where process tag | TS.isTagOpenName "table" tag = addClass "table table-striped" tag
                     | otherwise                    = tag
+
+customWriterOptions :: WriterOptions
+customWriterOptions = defaultHakyllWriterOptions
+  { writerTableOfContents = True
+  , writerTemplate = Just "$if(toc)$<h3>Table of contents</h3>$toc$$endif$\n$body$"
+  }
 
 minifyJSCompiler = do
     s<-getResourceString
