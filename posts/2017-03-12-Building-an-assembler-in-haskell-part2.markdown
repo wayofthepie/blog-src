@@ -1,5 +1,5 @@
 ---
-title: Building An Assembler In Haskell 2
+title: "Building An Assembler In Haskell : Implementation/Megaparsec"
 tags: haskell, emulator
 ---
 
@@ -156,5 +156,61 @@ Putting this all together, `lexeme $ Mnemonic . T.pack <$> mnem` gives us a func
 parses three upper case characters as a `String`, we then map `Mnemonic . T.pack` over the
 value that `mnem` parses which packs it into a `Text` value and builds a
 `Mnemonic` from that value, finally it consumes whitespace or comments after the three characters.
+
+## label
+
+```{.haskell}
+label :: Parser Label
+label = lexeme $ Label . T.pack <$> ((:) <$> letterChar <*>  many alphaNumChar)
+```
+Even more new symbols! We haven't used
+[<*>](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html#v:-60--42--62-)
+before. `<*>` ("apply") is from the
+[Applicative](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html#t:Applicative)
+typeclass. This allows us to sequentially apply functions within _Applicative Functors_ over
+other _Applicative Functors_ -
+the name comes form the fact that _Functor_ is a superclass of _Applicative_.
+
+### Breakdown
+Lets forget about everything outside of the brackets for now, and only focus on the
+following.
+```{.haskell}
+(:) <$> letterChar <*>  many alphaNumChar
+```
+To parse a label we first
+need to parse _some_ string of any length which starts with a letter, according to our grammar.
+
+[letterChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:letterChar)
+and
+[alphaNumChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:alphaNumChar)
+are functions from megaparsec and parse a single letter and a single alpha-numeric
+character, respectively.
+[many](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:many)
+parses zero or more occurences of the given parser, so `many alphaNumChar` parses zero or more alpha-numeric
+characters.
+
+Now the interesting bit. `letterChar` will return a single `Char`, and `many alphaNumChar` will return a `String`, which
+is a `[Char]`, we need a way of combining the values produced from these parsers so we just
+get a `[Char]`.
+
+To do this we map `:` (the list constructor) over `letterChar` which has
+type `Identity Char` (see the quick jump section
+[above](http://localhost:8000/posts/2017-03-12-Building-an-assembler-in-haskell-part2.html#quick-jump-into-the-parser-types)).
+`Identity` is an Applicative Functor so what we end up creating is a function of type
+`Identity ([Char] -> [Char])`.
+
+Why? Well, `:` has the type `a -> [a] -> [a]` and when we map it over `letterChar` we
+partially apply `:` to `letterChar`'s `Char` value giving us a new function of `[a] -> [a]` -
+specifically `[Char] -> [Char]` - inside `Identity`.
+
+Remember `many alphaNumChar` will return a list. It's type is `Identity [Char]` so when we use `<*>` here, what we are
+doing is applying our new `Identity ([Char] -> [Char])` function over `Identity [Char]`, giving us
+a value of type `Identity [Char]` where `[Char]` is the list of our combined `letterChar`
+character and `many alphaNum` string.
+
+### Packing It Up
+Now we have our parsed string, we pack it into a `Text` value, wrap it up in a `Label`
+and parse possible whitespace with `lexeme`. We've seen this above in other
+parsers, no need to repeat. So that's `label` implemented!
 
 [^1]: Hmmm?
