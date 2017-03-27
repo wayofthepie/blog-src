@@ -18,6 +18,8 @@ _lexemes_. In our case, _STORE_ is a lexeme in the category of _label_ tokens. B
 continue implementing the parsers for our language, let's create convenience functions for
 parsing trailing space after our lexemes.
 
+
+<hr/>
 ## Lexemes And Space
 ```{.haskell}
 spaceEater :: Parser ()
@@ -29,6 +31,7 @@ spaceEater = L.space
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme spaceEater
 ```
+
 `spaceEater` uses _megaparsec's_
 [space](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:space)
 function to build a parser that consumes and discards whitespace and comments. Note that it is
@@ -70,7 +73,7 @@ I left out the description of the
 typeclass, see
 [Jump Into The Parser Types](#jump-into-the-parser-types) for more info.
 
-
+<hr/>
 ## bytes
 The `bytes` parser parses two bytes, the second being optional. We can use our [single
 byte parser](/posts/2017-03-03-Building-an-assembler-in-haskell.html#implementation)
@@ -93,6 +96,7 @@ bytes = do
   pure $ T.append firstByte anotherByte
 ```
 
+<hr/>
 ## mnemonic
 The `mnemonic` parser is just a parser of three upper case characters. Here we use
 _megaparsec's_ [count](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:count)
@@ -131,6 +135,7 @@ value that `mnem` parses which packs it into a `Text` value and builds a
 `Mnemonic` from that value, finally it consumes whitespace or comments after the three characters
 with `lexeme`.
 
+<hr/>
 ## label
 
 ```{.haskell}
@@ -214,10 +219,12 @@ Following the example above we now have:
 ```{.haskell}
 label = lexeme $ Label . T.pack <$> (p "cabc123")
 ```
+
 With our parsed string, we pack it into a `Text` value, wrap it up in a `Label`
 and parse possible whitespace with `lexeme`. We've seen this above in other
 parsers, no need to repeat. So that's `label` implemented!
 
+<hr/>
 ## labelAssign
 Now that `label` is complete, `labelAssign` is simple:
 
@@ -229,8 +236,10 @@ labelAssign = lexeme $ label <* char ':'
 In our case `label <* char ':'` says parse a label, then parse a ':' but discard it, so it's
 not part of the `Label` which `labelAssign` builds.
 
+<hr/>
 # Conclusion
 
+<hr/>
 # More depth ...
 
 ## Jump Into The Parser Types
@@ -266,6 +275,7 @@ data ParsecT e s m a
 So wherever you see the type `Parser a` in our code it is a synonym for
 `ParsecT Dec Text Identity a`.
 
+<hr/>
 ## Functors
 `Functor` in haskell is a typeclass. Instances of `Functor` implement the `fmap` function.
 It is defined as follows:
@@ -277,6 +287,7 @@ class Functor f where
 `fmap` takes a function from `a -> b` lifts it into the functor f in the second argument (`f a`)
 applying that function to `a`.
 
+<hr/>
 ## Applicative Functors
 
 [^1]: `Parser` here is a type synonym an as such cannot be a constructor.
