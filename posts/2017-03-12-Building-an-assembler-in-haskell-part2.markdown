@@ -12,15 +12,13 @@ We also saw that there are a few deficiencies in our grammar.
 In this post I want to dive deeper into megaparsec, fully implement the language we
 spec'd and finally improve it.
 
-# Implementing The Rest Of Our Parsers
+<hr/>
+# Lexemes And Space
 The _lexemes_ of a language are the smallest syntactic unit. _Tokens_ are categories of
 _lexemes_. In our case, _STORE_ is a lexeme in the category of _label_ tokens. Before we
 continue implementing the parsers for our language, let's create convenience functions for
 parsing trailing space after our lexemes.
 
-
-<hr/>
-## Lexemes And Space
 ```{.haskell}
 spaceEater :: Parser ()
 spaceEater = L.space
@@ -74,6 +72,7 @@ typeclass, see
 [Jump Into The Parser Types](#jump-into-the-parser-types) for more info.
 
 <hr/>
+# The Parsers
 ## bytes
 The `bytes` parser parses two bytes, the second being optional. We can use our [single
 byte parser](/posts/2017-03-03-Building-an-assembler-in-haskell.html#implementation)
@@ -189,7 +188,7 @@ short and simple as the real value of `p` for each step doesn't really matter in
 -- So, given
 > (:) <$> letterChar <*>  many alphaNumChar
 
--- After mapping (:) over the value letterChar parsed ('c' in this case) we get the following.
+-- After mapping (:) over the value letterChar parsed ('c' in this case) we get
 > p ((:) 'c') <*> many alphaNumChar
 
 ```
@@ -205,7 +204,10 @@ over the value of `many alphaNumChar`, which itself has type `Parser [Char]`. Le
 -- we get
 > p ((:) 'c') <*> p "abc123"
 
--- which gives the following
+-- giving
+> p ((:) 'c' "abc123")
+
+-- which gives
 > p "cabc123"
 
 ```
