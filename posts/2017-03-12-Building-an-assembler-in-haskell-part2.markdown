@@ -67,45 +67,14 @@ whitespace and comments, with our `spaceEater`.
 
 I left out the description of the
 [MonadParsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:MonadParsec)
-typeclass, let's digress for a second and jump into the types. It's not super important
-right now, so you can skip this.
+typeclass, see
+[Jump Into The Parser Types](#jump-into-the-parser-types) for more info.
 
-### Quick Jump Into The Parser Types
-The
-[MonadParsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:MonadParsec)
-typeclass defines some general combinators
-(
-[try](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#v:try),
-[lookahead](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#v:lookAhead),
-etc...
-), it's type variables `e`, `s` and `m` correspond to instances of the following:
-
-  * `e` : [ErrorComponent](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Error.html#t:ErrorComponent)
-  * `s` : [Stream](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:Stream)
-  * `m` : [MonadPlus]() _and_ [Alternative]()
-
-These instances come from our `Parser` type, which we
-[defined](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/e454cce2af3c938e229f1d60a2f3c3d0bf3a3adb/src/Assembler.hs#L8)
-as:
-
-```{.haskell}
-type Parser = Parsec Dec T.Text
-```
-This gives us: `e` is `Dec`, `s` is `Text` and `m` is `Identity`. `Parsec Dec T.Text` (see
-[Parsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:Parsec)
-) is a type synonym for `ParsecT Dec Text Identity`, and
-[ParsecT](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:ParsecT)
-has the type:
-
-```{.haskell}
-data ParsecT e s m a
-```
-So wherever you see the type `Parser a` in our code it is a synonym for
-`ParsecT Dec Text Identity a`.
 
 ## bytes
-The `bytes` parser parses two bytes, the second being optional. We can use our single
-byte parser `byte` to parse each one, with  _megaparsec's_
+The `bytes` parser parses two bytes, the second being optional. We can use our [single
+byte parser](/posts/2017-03-03-Building-an-assembler-in-haskell.html#implementation)
+(which we defined in the previous post) to parse each one, along with _megaparsec's_
 [option](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:option) function
 to optionally parse the second byte.
 
@@ -142,7 +111,7 @@ mnemonic = lexeme $ Mnemonic . T.pack <$> mnem
   mnem = count 3 upperChar
 ```
 
-### What does this do!?
+So what does this actually do?
 
   * We create a function called `mnem`, defined as `count 3 upperChar`, this
     parses three upper case characters,
@@ -150,10 +119,12 @@ mnemonic = lexeme $ Mnemonic . T.pack <$> mnem
   * `Mnemonic` is the constructor for our `newtype` which we defined in the last post -
     `newtype Mnemonic = Mnemonic T.Text deriving Show`.
   * `lexeme` we defined above, it eats trailing whitespace and comments.
-  * Finally `<$>` is the infix synonym for `fmap`, which applies a
-    function over a
-    [Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html#t:Functor) [^1].
+  * Finally `<$>` is the infix synonym for `fmap`, which lifts a single argument function into
+    a
+    [Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html#t:Functor).
 
+
+### Putting it all together...
 Putting it all together, what we get is a function which parses three upper case characters as a `String`,
 we then map `Mnemonic . T.pack` over the
 value that `mnem` parses which packs it into a `Text` value and builds a
@@ -166,15 +137,7 @@ with `lexeme`.
 label :: Parser Label
 label = lexeme $ Label . T.pack <$> ((:) <$> letterChar <*>  many alphaNumChar)
 ```
-Even more new symbols! We haven't used
-[<*>](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html#v:-60--42--62-)
-before. `<*>` ("apply") is from the
-[Applicative](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html#t:Applicative)
-typeclass. This allows us to sequentially apply functions within _Applicative Functors_ over
-other _Applicative Functors_ -
-the name comes from the fact that _Functor_ is a superclass of _Applicative_.
 
-### Breakdown
 Lets forget about everything outside of the brackets for now, and only focus on the
 following.
 ```{.haskell}
@@ -186,33 +149,72 @@ need to parse _some_ string of any length which starts with a letter, according 
 [letterChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:letterChar)
 and
 [alphaNumChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:alphaNumChar)
-are functions from megaparsec and parse a single letter and a single alpha-numeric
+are functions from megaparsec that parse a single letter and a single alpha-numeric
 character, respectively.
 [many](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:many)
 parses zero or more occurences of the given parser, so `many alphaNumChar` parses zero or more alpha-numeric
 characters.
 
+We saw `<$>` (`fmap`) when building `mnemonic`, however we haven't used
+[<*>](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html#v:-60--42--62-)
+yet.  `<*>` ("apply") is from the
+[Applicative](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html#t:Applicative)
+typeclass, it is just function application for _Applicative Functors_ (see
+[Applicative Functors](#applicative-functors) for more info).
+
+### Breaking it down
 Now the interesting bit. `letterChar` will return a single `Char`, and `many alphaNumChar` will return a `String`, which
 is a `[Char]`, we need a way of combining the values produced from these parsers so we just
 get a `[Char]`.
 
 To do this we map `:` (the list constructor) over `letterChar` which has
-type `Identity Char` (see the quick jump section
-[above](http://localhost:8000/posts/2017-03-12-Building-an-assembler-in-haskell-part2.html#quick-jump-into-the-parser-types)).
-`Identity` is an Applicative Functor so what we end up creating is a function of type
-`Identity ([Char] -> [Char])`.
+type `Parser Char`. What we end up creating is a function of type
+`Parser ([Char] -> [Char])`.
 
-Why? Well, `:` has the type `a -> [a] -> [a]` and when we map it over `letterChar` we
-partially apply `:` to `letterChar`'s `Char` value giving us a new function of `[a] -> [a]` -
-specifically `[Char] -> [Char]` - inside `Identity`.
+We then apply this function (`Parser` is an Applicative Functor) over the value of `many
+alphaNumChar`, which itself has type `Parser [Char]`, by using `<*>`.
 
-Remember `many alphaNumChar` will return a list. It's type is `Identity [Char]` so when we use `<*>` here, what we are
-doing is applying our new `Identity ([Char] -> [Char])` function over `Identity [Char]`, giving us
-a value of type `Identity [Char]` where `[Char]` is the list of our combined `letterChar`
+#### Why is this the case?
+Well, `:` is defined as follows:
+
+```{.haskell}
+(:) :: a -> [a] -> [a]
+```
+
+When we map it over `letterChar` with `<*>` we partially apply `:` to `letterChar`'s
+`Char` value giving us the function `(:) 'c'` inside `Parser`, so it's type is
+`Parser ([Char] -> [Char])`.
+
+Lets assume `letterChar` parses the letter 'c', this would give us something like the following:
+
+```{.haskell}
+p ((:) 'c') <*> many alphaNumChar
+```
+Note that here I'm using `p` to denote some constructor for values of type `Parser a`, the actual
+constructor here is not relevant.
+
+Remember `many alphaNumChar` will return a list. It's type is `p [Char]` so when we use `<*>` here what we are
+doing is applying our new `p ([Char] -> [Char])` function over `p [Char]`, giving us
+a value of type `p [Char]` where `[Char]` is the list of our combined `letterChar`
 character and `many alphaNum` string.
 
+So, assuming `many alphaNumChar` parses "abc123", `p ((:) 'c') <*> many alphaNumChar`
+would evaluate to:
+
+```{.haskell}
+p ((:) 'c' "abc123")
+
+-- Which is simply:
+p "cabc123"
+```
+
 ### Packing It Up
-Now we have our parsed string, we pack it into a `Text` value, wrap it up in a `Label`
+Following the example above we now have:
+
+```{.haskell}
+label = lexeme $ Label . T.pack <$> (p "cabc123")
+```
+With our parsed string, we pack it into a `Text` value, wrap it up in a `Label`
 and parse possible whitespace with `lexeme`. We've seen this above in other
 parsers, no need to repeat. So that's `label` implemented!
 
@@ -227,5 +229,56 @@ labelAssign = lexeme $ label <* char ':'
 In our case `label <* char ':'` says parse a label, then parse a ':' but discard it, so it's
 not part of the `Label` which `labelAssign` builds.
 
+# Conclusion
 
-[^1]: Hmmm?
+# More depth ...
+
+## Jump Into The Parser Types
+The
+[MonadParsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:MonadParsec)
+typeclass defines some general combinators
+(
+[try](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#v:try),
+[lookahead](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#v:lookAhead),
+etc...
+), it's type variables `e`, `s` and `m` correspond to instances of the following:
+
+  * `e` : [ErrorComponent](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Error.html#t:ErrorComponent)
+  * `s` : [Stream](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:Stream)
+  * `m` : [MonadPlus]() _and_ [Alternative]()
+
+These instances come from our `Parser` type, which we
+[defined](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/e454cce2af3c938e229f1d60a2f3c3d0bf3a3adb/src/Assembler.hs#L8)
+as:
+
+```{.haskell}
+type Parser = Parsec Dec T.Text
+```
+This gives us: `e` is `Dec`, `s` is `Text` and `m` is `Identity`. `Parsec Dec T.Text` (see
+[Parsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:Parsec)
+) is a type synonym for `ParsecT Dec Text Identity`, and
+[ParsecT](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:ParsecT)
+has the type:
+
+```{.haskell}
+data ParsecT e s m a
+```
+So wherever you see the type `Parser a` in our code it is a synonym for
+`ParsecT Dec Text Identity a`.
+
+
+
+## Functors
+`Functor` in haskell is a typeclass. Instances of `Functor` implement the `fmap` function.
+It is defined as follows:
+
+```{.haskell}
+class Functor f where
+  fmap :: (a -> b) -> f a -> f b
+```
+`fmap` takes a function from `a -> b` lifts it into the functor f in the second argument (`f a`)
+applying that function to `a`.
+
+## Applicative Functors
+
+[^1]: `Parser` here is a type synonym an as such cannot be a constructor.
