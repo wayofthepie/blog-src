@@ -163,50 +163,50 @@ typeclass, it is just function application for _Applicative Functors_ (see
 [Applicative Functors](#applicative-functors) for more info).
 
 ### Breaking it down
-Now the interesting bit. `letterChar` will return a single `Char`, and `many alphaNumChar` will return a `String`, which
+Now the interesting bit. `letterChar` will parse a single `Char`, and `many alphaNumChar` will parse a `String`, which
 is a `[Char]`, we need a way of combining the values produced from these parsers so we just
 get a `[Char]`.
 
 To do this we map `:` (the list constructor) over `letterChar` which has
 type `Parser Char`. What we end up creating is a function of type
-`Parser ([Char] -> [Char])`.
+`Parser ([Char] -> [Char])`. Let's assume `letterChar` parses a 'c':
 
-We then apply this function (`Parser` is an Applicative Functor) over the value of `many
-alphaNumChar`, which itself has type `Parser [Char]`, by using `<*>`.
-
-#### Why is this the case?
-Well, `:` is defined as follows:
-
-```{.haskell}
-(:) :: a -> [a] -> [a]
-```
-
-When we map it over `letterChar` with `<*>` we partially apply `:` to `letterChar`'s
-`Char` value giving us the function `(:) 'c'` inside `Parser`, so it's type is
-`Parser ([Char] -> [Char])`.
-
-Lets assume `letterChar` parses the letter 'c', this would give us something like the following:
+<div class="alert alert-info">
+Note that I'm using `p` here as a constructor for values of type `Parser a` for
+the intermediate steps. This keeps things
+short and simple as the real value of `p` for each step doesn't really matter in this case.
+</div>
 
 ```{.haskell}
-p ((:) 'c') <*> many alphaNumChar
+-- In case you forgot, here is the type of (:)
+> (:) :: a -> [a] -> [a]
+
+-- So, given
+> (:) <$> letterChar <*>  many alphaNumChar
+
+-- After mapping (:) over the value letterChar parsed ('c' in this case) we get the following.
+> p ((:) 'c') <*> many alphaNumChar
+
 ```
-Note that here I'm using `p` to denote some constructor for values of type `Parser a`, the actual
-constructor here is not relevant.
 
-Remember `many alphaNumChar` will return a list. It's type is `p [Char]` so when we use `<*>` here what we are
-doing is applying our new `p ([Char] -> [Char])` function over `p [Char]`, giving us
-a value of type `p [Char]` where `[Char]` is the list of our combined `letterChar`
-character and `many alphaNum` string.
-
-So, assuming `many alphaNumChar` parses "abc123", `p ((:) 'c') <*> many alphaNumChar`
-would evaluate to:
+Using `<*>` we then apply `p ((:) 'c')`
+over the value of `many alphaNumChar`, which itself has type `Parser [Char]`. Let's assume
+`many alphaNumChar` parses "abc123":
 
 ```{.haskell}
-p ((:) 'c' "abc123")
+-- From here
+> p ((:) 'c') <*> many alphaNumChar
 
--- Which is simply:
-p "cabc123"
+-- we get
+> p ((:) 'c') <*> p "abc123"
+
+-- which gives the following
+> p "cabc123"
+
 ```
+
+Now we have the value we want, our letter char combined with many alpha-numeric chars,
+with the type `Parser [Char]` (or `Parser String`).
 
 ### Packing It Up
 Following the example above we now have:
@@ -265,8 +265,6 @@ data ParsecT e s m a
 ```
 So wherever you see the type `Parser a` in our code it is a synonym for
 `ParsecT Dec Text Identity a`.
-
-
 
 ## Functors
 `Functor` in haskell is a typeclass. Instances of `Functor` implement the `fmap` function.
