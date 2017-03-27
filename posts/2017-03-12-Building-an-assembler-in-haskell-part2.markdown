@@ -169,7 +169,7 @@ before. `<*>` ("apply") is from the
 [Applicative](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html#t:Applicative)
 typeclass. This allows us to sequentially apply functions within _Applicative Functors_ over
 other _Applicative Functors_ -
-the name comes form the fact that _Functor_ is a superclass of _Applicative_.
+the name comes from the fact that _Functor_ is a superclass of _Applicative_.
 
 ### Breakdown
 Lets forget about everything outside of the brackets for now, and only focus on the
@@ -212,5 +212,17 @@ character and `many alphaNum` string.
 Now we have our parsed string, we pack it into a `Text` value, wrap it up in a `Label`
 and parse possible whitespace with `lexeme`. We've seen this above in other
 parsers, no need to repeat. So that's `label` implemented!
+
+## labelAssign
+Now that `label` is complete, `labelAssign` is simple:
+
+```{.haskell}
+labelAssign :: Parser Label
+labelAssign = lexeme $ label <* char ':'
+```
+`<*` is similar to `<*>`, the difference is `<*` discards the value of the second argument.
+In our case `label <* char ':'` says parse a label, then parse a `:` but discard it, so it's
+not part of the `Label` which `labelAssign` builds.
+
 
 [^1]: Hmmm?
