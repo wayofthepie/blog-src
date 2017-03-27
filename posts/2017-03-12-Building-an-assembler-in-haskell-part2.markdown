@@ -133,8 +133,7 @@ functions.
   * `count n p` runs the parser `p` `n` times.
   * `upperChar` is a parser for upper case Unicode characters.
 
-So, for `mnemonic` we create a function called `mnem` which is `count 3 upperChar`, this
-parses three `upperCase` characters.
+Following is the implementation.
 
 ```{.haskell}
 mnemonic :: Parser Mnemonic
@@ -143,19 +142,23 @@ mnemonic = lexeme $ Mnemonic . T.pack <$> mnem
   mnem = count 3 upperChar
 ```
 
-Here we also do a few new things. `T.pack` is `pack` from `Data.Text`, it packs a `String`
-into a `Text` value. `Mnemonic` is the constructor for our `newtype` which we defined in the
-last post - `newtype Mnemonic = Mnemonic T.Text deriving Show`.
+### What does this do!?
 
-`lexeme` we defined above, it eats trailing whitespace and comments.
-Finally `<$>` is the infix synonym for `fmap`, which applies a
-function over a
-[Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html#t:Functor) [^1].
+  * We create a function called `mnem`, defined as `count 3 upperChar`, this
+    parses three upper case characters,
+  * `T.pack` is `pack` from `Data.Text`, it packs a `String` into a `Text` value.
+  * `Mnemonic` is the constructor for our `newtype` which we defined in the last post -
+    `newtype Mnemonic = Mnemonic T.Text deriving Show`.
+  * `lexeme` we defined above, it eats trailing whitespace and comments.
+  * Finally `<$>` is the infix synonym for `fmap`, which applies a
+    function over a
+    [Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html#t:Functor) [^1].
 
-Putting this all together, `lexeme $ Mnemonic . T.pack <$> mnem` gives us a function which
-parses three upper case characters as a `String`, we then map `Mnemonic . T.pack` over the
+Putting it all together, what we get is a function which parses three upper case characters as a `String`,
+we then map `Mnemonic . T.pack` over the
 value that `mnem` parses which packs it into a `Text` value and builds a
-`Mnemonic` from that value, finally it consumes whitespace or comments after the three characters.
+`Mnemonic` from that value, finally it consumes whitespace or comments after the three characters
+with `lexeme`.
 
 ## label
 
@@ -221,7 +224,7 @@ labelAssign :: Parser Label
 labelAssign = lexeme $ label <* char ':'
 ```
 `<*` is similar to `<*>`, the difference is `<*` discards the value of the second argument.
-In our case `label <* char ':'` says parse a label, then parse a `:` but discard it, so it's
+In our case `label <* char ':'` says parse a label, then parse a ':' but discard it, so it's
 not part of the `Label` which `labelAssign` builds.
 
 
