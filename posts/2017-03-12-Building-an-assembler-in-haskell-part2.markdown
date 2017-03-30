@@ -71,7 +71,6 @@ typeclass, see
 [Jump Into The Parser Types](#jump-into-the-parser-types) for more info.
 
 <hr/>
-# The Parsers
 ## bytes
 ### Properties
 First, let's write some properties!
@@ -233,7 +232,66 @@ need two `Arbitrary` instances - the first, `LabelWithLetter`, is for all letter
 start with a letter and the second, `LabelWithNonLetter`, is for strings which start with a
 non letter character.
 
+We've seen `shouldParse`, it was used in the `bytes` parser, however we haven't seen
+[shouldFailWith](https://hackage.haskell.org/package/hspec-megaparsec-0.3.1/docs/Test-Hspec-Megaparsec.html#v:shouldFailWith)
+yet and there seems to be quite a bit to it! Lets break it down.
 
+#### shouldFailWith
+Sometimes you want to verify that a parser fails on a given input. Not only that, but you
+want to verify that the error which is given on that failure contains the right message,
+positioin information, etc... `shouldFailWith` allows you to do this. Lets have a look at
+its type.
+
+```{.haskell}
+shouldFailWith :: (Ord t, ShowToken t, ShowErrorComponent e, Show a)
+               => Either (ParseError t e) a
+               -> ParseError t e
+               -> Expectation
+```
+So it takes:
+
+  * An `Either (ParseError t e) a`, which is the return type of `Text.Megaparsec`'s
+    [parse](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:parse)
+    function.
+  * A `ParseError t e`, which we can build with `Test.Hspec.Megaparsec`'s
+    [err](https://hackage.haskell.org/package/hspec-megaparsec-0.3.1/docs/Test-Hspec-Megaparsec.html#v:err)
+    function.
+
+The `parse` and `err` functions have the following types:
+
+```{.haskell}
+err :: NonEmpty SourcePos -- ^ 'ParseError' position
+    -> EC t e             -- ^ Error components
+    -> ParseError t e     -- ^ Resulting 'ParseError'
+
+parse
+  :: Parsec e s a -- ^ Parser to run
+  -> String       -- ^ Name of source file
+  -> s            -- ^ Input for parser
+```
+
+Looking at our `prop_label_invalidLabelString` property:
+
+```{.haskell}
+prop_label_invalidLabelString (LabelWithNonLetter lbl) =
+  parse label "" lbl `shouldFailWith` err posI (utok (T.head lbl) <> elabel "letter")
+```
+
+We run the parser `label` on the string `lbl` which is generated from the `Arbitrary`
+instance of `LabelWithNonLetter`. We then assert that it fails with the following
+information in the error.
+
+  * The initial character of `lbl` is the cause, this is specified in the `err` call with
+    [posI](https://hackage.haskell.org/package/hspec-megaparsec-0.3.1/docs/Test-Hspec-Megaparsec.html#v:posI).
+  * It was an unexpected token, `utok (T.head lbl)`.
+  * It was expected to be a letter, `elabel letter`.
+  * Finally we combine the unexpected token and expected token into one
+    [EC](https://hackage.haskell.org/package/hspec-megaparsec-0.3.1/docs/Test-Hspec-Megaparsec.html#t:EC)
+    using `<>` (this is from `EC`'s
+    [Monoid](https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Monoid.html#t:Monoid)
+    instance) - i.e. `utok (T.head lbl) <> elabel "letter"`.
+
+### Implementation
 ```{.haskell}
 label :: Parser Label
 label = lexeme $ Label . T.pack <$> ((:) <$> letterChar <*>  many alphaNumChar)
