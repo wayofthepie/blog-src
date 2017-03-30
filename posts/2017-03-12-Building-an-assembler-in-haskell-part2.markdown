@@ -8,13 +8,13 @@ In the last post we wrote a grammar for a simple assembly language, wrote the ou
 derived some properties from the grammar for a simple parser `byte` and implemented `byte`.
 We also saw that there are a few deficiencies in our grammar. In this post we'll implement
 `bytes`, `menmonic`, `label` and `labelAssign`. For each parser I'll start with some _QuickCheck_
-properties then use those as the spec to implement the parser. Lets get to it!
+properties then use those as the spec to implement the parser. Let's get to it!
 
 <hr/>
 # Lexemes And Space
 The _lexemes_ of a language are the smallest syntactic unit. _Tokens_ are categories of
 _lexemes_. In our case, the _"STORE"_ string is an example of a lexeme in the category of
-_label_ tokens. Lets also assume we can safely eat any whitespace proceeding lexemes.
+_label_ tokens. Let's also assume we can safely eat any whitespace proceeding lexemes.
 With this in mind, and before we continue implementing the parsers for our language,
 let's create convenience functions for parsing trailing space after our lexemes.
 
@@ -59,7 +59,7 @@ The type of `space` corresponds to the following:
     our case.
 
   * The last argument is a block comment parser, here we use
-    [skipBlockComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipBlockComment).
+    [skipBlockComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipBlockComment),
     which parses and discards data between "/*" and "*/".
 
 Using `spaceEater` we create a function called `lexeme` which uses [lexeme]() from _megaparsec_ to
@@ -118,7 +118,7 @@ nothing in mind for custom error messages, the ones _megaparsec_ spits out are g
 useful enough for parsers this small, so for now I don't think there is a need for a property
 which checks the error case.
 
-Ok, now thats done, we have a spec for our implementation to follow!
+Ok, now that's done, we have a spec for our implementation to follow!
 
 ## Implementation
 The `bytes` parser parses two bytes, the second being optional. We can use our [single
@@ -233,12 +233,12 @@ non letter character.
 
 We've seen `shouldParse`, it was used in the `bytes` parser, however we haven't seen
 [shouldFailWith](https://hackage.haskell.org/package/hspec-megaparsec-0.3.1/docs/Test-Hspec-Megaparsec.html#v:shouldFailWith)
-yet and there seems to be quite a bit to it! Lets break it down.
+yet and there seems to be quite a bit to it! Let's break it down.
 
 ### shouldFailWith
 Sometimes you want to verify that a parser fails on a given input. Not only that, but you
 want to verify that the error which is given on that failure contains the right message,
-positioin information, etc... `shouldFailWith` allows you to do this. Lets have a look at
+position information, etc... `shouldFailWith` allows you to do this. Let's have a look at
 its type.
 
 ```{.haskell}
@@ -301,7 +301,7 @@ label :: Parser Label
 label = lexeme $ Label . T.pack <$> ((:) <$> letterChar <*>  many alphaNumChar)
 ```
 
-Lets forget about everything outside of the brackets for now, and only focus on the
+Let's forget about everything outside of the brackets for now, and only focus on the
 following.
 ```{.haskell}
 (:) <$> letterChar <*>  many alphaNumChar
@@ -325,7 +325,11 @@ yet.  `<*>` ("apply") is from the
 typeclass, it is just function application for _Applicative Functors_.
 
 ### Functor/Applicative Quick Description
-I'll go into more depth on _Applicative Functors_ in a future post, for now just think of a _Functor_ as
+I'll go into more depth on
+[Applicative](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html)
+in a future post, for now just think of a
+[Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html)
+as
 something you can map over (a list is a _Functor_) and an _Applicative Functor_ as something
 that you can sequence functions through. Lists give a nice example comparing the two. Let's
 say I have a list of `[1,2]` and want to add `1` to each element. List is a `Functor` so I can
@@ -340,17 +344,16 @@ use `fmap`:
 [2,3]
 ```
 
-Now, lets say I have a list `[1,2]` and a function _inside_ a list, `[(+1)]`, that I want to
-apply. I can use `fmap` here as its type is `(a -> b) -> f a -> f b` - meaning it lifts the
-function `(a -> b)` into the `Functor` `f a` which gives an `f b`. What we want is a
+Now, lets say I have a list `x = [1,2]` and a function _inside_ a list, `[(+1)]`, that I want to
+apply to each element of `x`. I can't use `fmap` here as its type is `(a -> b) -> f a -> f b` -
+meaning it lifts the function `(a -> b)` into the `Functor` `f a` which gives an `f b`. What we want is a
 function, like `fmap`, but where the function to apply is _within_ the `Functor` already -
-and this is precisely what `Applicative` gives us. The type of `<*>` is:
+and this is precisely what `Applicative` gives us with the function `<*>`. The type of `<*>` is:
 
 ```{.haskell}
 (<*>) :: f (a -> b) -> f a -> f b
 ```
-
-Excellent! Lets use it in our problem:
+Excellent! Turns out list also has an `Applicative` instance, so lets use it in our problem:
 
 ```{.haskell}
 > [(+1)] <*> [1,2]
@@ -358,7 +361,7 @@ Excellent! Lets use it in our problem:
 ```
 Hopefully that gives some intuition as to what _Functors_ and _Applicative Functors_ are and
 how they can be used. It may not be clear yet as to _why_ we use them in our parsers, but I'll
-leave that discussion for another post, as its not really needed for the rest of this post,
+leave that discussion for another post, as it's not really needed for the rest of this post,
 and there is quite a bit more to both that I have not mentioned.
 
 ## Breaking it down
