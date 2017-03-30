@@ -11,7 +11,7 @@ this post, so at the end of most sections that introduce new code I'll link to a
 which has the code up to that point.
 
 You can see the repo here:
-<https://github.com/wayofthepie/emu-mos6502-asm-blog>. The only pre-requisite is installing
+<https://github.com/wayofthepie/emu-mos6502-asm-blog/tree/hasm-blog01>. The only pre-requisite is installing
 [stack](https://docs.haskellstack.org/en/stable/README/#how-to-install), once the project is
 cloned you can use `stack install` to install dependencies and build the project.
 
