@@ -452,3 +452,5 @@ not part of the `Label` which `labelAssign` builds.
 Now we have ~80% of our parser completed, properties for each of the parsers,
 and some understanding (I hope) of one way to test _megaparsec_ parsers.
 In the next post I'll dive deeper into _megaparsec_ and  implement the remaining parsers.
+You can view the code up to this point at
+<https://github.com/wayofthepie/emu-mos6502-asm-blog/tree/hasm-blog02>.
