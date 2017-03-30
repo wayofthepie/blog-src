@@ -1,22 +1,22 @@
 ---
-title: "Building An Assembler In Haskell : Implementation/Megaparsec"
+title: "Building An Assembler In Haskell : Implementation"
 tags: haskell, emulator
 ---
 
 # Review
 In the last post we wrote a grammar for a simple assembly language, wrote the outline of our parser,
 derived some properties from the grammar for a simple parser `byte` and implemented `byte`.
-We also saw that there are a few deficiencies in our grammar. In this post I want to
-fully implement the language we spec'd, no improvements or changes from the grammar, just
-the implementation. For each parser I'll start with some _QuickCheck_ properties the use
-those as the spec to implement the parser. Lets get to it!
+We also saw that there are a few deficiencies in our grammar. In this post we'll implement
+`bytes`, `menmonic`, `label` and `labelAssign`. For each parser I'll start with some _QuickCheck_
+properties then use those as the spec to implement the parser. Lets get to it!
 
 <hr/>
 # Lexemes And Space
 The _lexemes_ of a language are the smallest syntactic unit. _Tokens_ are categories of
-_lexemes_. In our case, _STORE_ is a lexeme in the category of _label_ tokens. Before we
-continue implementing the parsers for our language, let's create convenience functions for
-parsing trailing space after our lexemes.
+_lexemes_. In our case, the _"STORE"_ string is an example of a lexeme in the category of
+_label_ tokens. Lets also assume we can safely eat any whitespace proceeding lexemes.
+With this in mind, and before we continue implementing the parsers for our language,
+let's create convenience functions for parsing trailing space after our lexemes.
 
 ```{.haskell}
 spaceEater :: Parser ()
@@ -68,8 +68,8 @@ whitespace and comments, with our `spaceEater`.
 
 I left out the description of the
 [MonadParsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:MonadParsec)
-typeclass, see
-[Jump Into The Parser Types](#jump-into-the-parser-types) for more info.
+typeclass, I'll leave this until a future post where I'll dive into the _megaparsec_ types
+in more depth.
 
 <hr/>
 # bytes
@@ -90,11 +90,9 @@ instance Arbitrary TwoCharHexString where
     pure $ TwoCharHexString (T.pack (x:[y]))
 
 -- Should parse valid two char hexstring.
-prop_byte_parseValidData :: TwoCharHexString -> IO ()
 prop_byte_parseValidData (TwoCharHexString s) = parse byte "" s  `shouldParse` s
 
 -- When successful should not consume more input.
-prop_byte_parseSuccessShouldNotConsume :: TwoCharHexString -> IO ()
 prop_byte_parseSuccessShouldNotConsume (TwoCharHexString s) extra =
   runParser' byte (initialState (T.append s extra)) `succeedsLeaving` extra
 ```
@@ -384,7 +382,7 @@ label = lexeme $ Label . T.pack <$> (p "cabc123")
 ```
 
 With our parsed string, we pack it into a `Text` value, wrap it up in a `Label`
-and parse possible whitespace with `lexeme`. We've seen this above in other
+and parse (and discard) possible whitespace with `lexeme`. We've seen this above in other
 parsers, no need to repeat.
 
 Phew! There was quite a lot to implementing `label` but we're done now, and can use this
@@ -392,7 +390,15 @@ info later in other parsers.
 
 <hr/>
 # labelAssign
-Now that `label` is complete, `labelAssign` is simple:
+Now that `label` is complete, `labelAssign` is simple. We will build it from `label` so
+really when creating a property all we need to check is that it parses and discards a ':'.
+
+```{.haskell}
+prop_labelAssign_shouldDiscardColon (LabelWithLetter lbl) =
+  parse labelAssign "" (T.snoc lbl ':') `shouldParse` Label lbl
+```
+
+The implementation:
 
 ```{.haskell}
 labelAssign :: Parser Label
@@ -403,61 +409,7 @@ In our case `label <* char ':'` says parse a label, then parse a ':' but discard
 not part of the `Label` which `labelAssign` builds.
 
 <hr/>
-# operand
-
-
-<hr/>
 # Conclusion
-
-<hr/>
-# More depth ...
-
-## Jump Into The Parser Types
-The
-[MonadParsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:MonadParsec)
-typeclass defines some general combinators
-(
-[try](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#v:try),
-[lookahead](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#v:lookAhead),
-etc...
-), it's type variables `e`, `s` and `m` correspond to instances of the following:
-
-  * `e` : [ErrorComponent](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Error.html#t:ErrorComponent)
-  * `s` : [Stream](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:Stream)
-  * `m` : [MonadPlus]() _and_ [Alternative]()
-
-These instances come from our `Parser` type, which we
-[defined](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/e454cce2af3c938e229f1d60a2f3c3d0bf3a3adb/src/Assembler.hs#L8)
-as:
-
-```{.haskell}
-type Parser = Parsec Dec T.Text
-```
-This gives us: `e` is `Dec`, `s` is `Text` and `m` is `Identity`. `Parsec Dec T.Text` (see
-[Parsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:Parsec)
-) is a type synonym for `ParsecT Dec Text Identity`, and
-[ParsecT](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:ParsecT)
-has the type:
-
-```{.haskell}
-data ParsecT e s m a
-```
-So wherever you see the type `Parser a` in our code it is a synonym for
-`ParsecT Dec Text Identity a`.
-
-<hr/>
-## Functors
-`Functor` in haskell is a typeclass. Instances of `Functor` implement the `fmap` function.
-It is defined as follows:
-
-```{.haskell}
-class Functor f where
-  fmap :: (a -> b) -> f a -> f b
-```
-`fmap` takes a function from `a -> b` lifts it into the functor f in the second argument (`f a`)
-applying that function to `a`.
-
-<hr/>
-## Applicative Functors
-
-[^1]: `Parser` here is a type synonym an as such cannot be a constructor.
+Now we have ~80% of our parser completed, properties for each of the parsers,
+and some understanding (I hope) of one way to test _megaparsec_ parsers.
+In the next post I'll dive deeper into _megaparsec_ and  implement the remaining parsers.
