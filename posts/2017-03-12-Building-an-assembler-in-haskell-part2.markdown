@@ -322,8 +322,44 @@ We saw `<$>` (`fmap`) when building `mnemonic`, however we haven't used
 [<*>](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html#v:-60--42--62-)
 yet.  `<*>` ("apply") is from the
 [Applicative](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html#t:Applicative)
-typeclass, it is just function application for _Applicative Functors_ (see
-[Applicative Functors](#applicative-functors) for more info).
+typeclass, it is just function application for _Applicative Functors_.
+
+### Functor/Applicative Quick Description
+I'll go into more depth on _Applicative Functors_ in a future post, for now just think of a _Functor_ as
+something you can map over (a list is a _Functor_) and an _Applicative Functor_ as something
+that you can sequence functions through. Lists give a nice example comparing the two. Let's
+say I have a list of `[1,2]` and want to add `1` to each element. List is a `Functor` so I can
+use `fmap`:
+
+```{.haskell}
+> fmap (+1) [1,2]
+[2,3]
+
+-- Or the inline version
+> (+1) <$> [1,2]
+[2,3]
+```
+
+Now, lets say I have a list `[1,2]` and a function _inside_ a list, `[(+1)]`, that I want to
+apply. I can use `fmap` here as its type is `(a -> b) -> f a -> f b` - meaning it lifts the
+function `(a -> b)` into the `Functor` `f a` which gives an `f b`. What we want is a
+function, like `fmap`, but where the function to apply is _within_ the `Functor` already -
+and this is precisely what `Applicative` gives us. The type of `<*>` is:
+
+```{.haskell}
+(<*>) :: f (a -> b) -> f a -> f b
+```
+
+Excellent! Lets use it in our problem:
+
+```{.haskell}
+> [(+1)] <*> [1,2]
+[2,3]
+```
+Hopefully that gives some intuition as to what _Functors_ and _Applicative Functors_ are and
+how they can be used. It may not be clear yet as to _why_ we use them in our parsers, but I'll
+leave that discussion for another post, as its not really needed for the rest of this post,
+and there is quite a bit more to both that I have not mentioned.
 
 ## Breaking it down
 Now the interesting bit. `letterChar` will parse a single `Char`, and `many alphaNumChar` will parse a `String`, which
