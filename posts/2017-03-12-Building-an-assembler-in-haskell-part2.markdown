@@ -101,9 +101,18 @@ prop_byte_parseSuccessShouldNotConsume (TwoCharHexString s) extra =
 
 `byte` should parse a two character hex string, representing a byte, so we create a newtype
 `TwoCharHexString` to represent this. The `Arbitrary` instance is made up of a random
-selectoin of two characters from the set of upper case `A` to `F`, lower case `a` to `f`
+selection of two characters from the set of upper case `A` to `F`, lower case `a` to `f`
 letters and any single digit. With this arbitrary instance _QuickCheck_ can now generate
 random instances of our `TwoCharHexString` type.
+
+Note the use of:
+
+  * [shouldParse](https://hackage.haskell.org/package/hspec-megaparsec-0.3.1/docs/Test-Hspec-Megaparsec.html#v:shouldParse) -
+    `shouldParse` takes a parse result, the expected value and returns an
+    [Expectation](https://hackage.haskell.org/package/hspec-expectations-0.8.2/docs/Test-Hspec-Expectations.html#t:Expectation).
+    The `Expectation` succeeds if the result is equal to the expected value, and fails otherwise.
+  * [succeedsLeaving](https://hackage.haskell.org/package/hspec-megaparsec-0.3.1/docs/Test-Hspec-Megaparsec.html#v:succeedsLeaving) -
+    `succeedsLeaving` checks whether a parser has succeeded leaving the specified input untouched.
 
 Simple! We now have a property which checks that the parser parses what we expect and
 another which checks that it does not consume more input than it should. As of now I have
@@ -193,6 +202,37 @@ with `lexeme`.
 
 <hr/>
 ## label
+### Properties
+```{.haskell}
+newtype LabelWithLetter = LabelWithLetter T.Text deriving Show
+newtype LabelWithNonLetter = LabelWithNonLetter T.Text deriving Show
+
+instance Arbitrary LabelWithLetter where
+  arbitrary = do
+    lbl <- genAlphaNum
+    lowerLetter <- choose ('a', 'z')
+    upperLetter <- choose ('A', 'Z')
+    start <- elements [lowerLetter, upperLetter]
+    pure . LabelWithLetter $ T.pack (start:lbl)
+
+instance Arbitrary LabelWithNonLetter where
+  arbitrary = do
+    (LabelWithLetter lbl) <- arbitrary
+    nonAlphaChar <- suchThat (arbitrary :: Gen Char) (\s -> not $ isAlpha s)
+    pure . LabelWithNonLetter $ T.append (T.pack [nonAlphaChar]) lbl
+
+prop_label_validLabelString (LabelWithLetter lbl) =
+  parse label "" lbl `shouldParse` (Label lbl)
+
+prop_label_invalidLabelString (LabelWithNonLetter lbl) =
+  parse label "" lbl `shouldFailWith`  err posI (utok (T.head lbl) <> elabel "letter")
+```
+`label` is a little more involved than the last few parsers. In this case we want to verify
+that if does fail when trying to parse a string that does not start with a letter. So we
+need two `Arbitrary` instances - the first, `LabelWithLetter`, is for all letter strings which
+start with a letter and the second, `LabelWithNonLetter`, is for strings which start with a
+non letter character.
+
 
 ```{.haskell}
 label :: Parser Label
