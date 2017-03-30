@@ -4,13 +4,11 @@ tags: haskell, emulator
 ---
 
 # Review
-In the last post we built grammar for a simple assembly language, wrote the shell of our parser,
+In the last post we wrote a grammar for a simple assembly language, wrote the outline of our parser,
 derived some properties from the grammar for a simple parser `byte` and implemented `byte`.
-
-We also saw that there are a few deficiencies in our grammar.
-
-In this post I want to dive deeper into megaparsec, fully implement the language we
-spec'd and finally improve it.
+We also saw that there are a few deficiencies in our grammar. In this post I want to
+fully implement the language we spec'd, no improvements or changes from the grammar, just
+the implementation!
 
 <hr/>
 # Lexemes And Space
@@ -36,8 +34,8 @@ function to build a parser that consumes and discards whitespace and comments. N
 prefixed with `L.` here (`L.space`) because `Text.Megaparsec.Lexer` is imported qualified as
 `L`, see [here](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/e454cce2af3c938e229f1d60a2f3c3d0bf3a3adb/src/Assembler.hs#L6).
 
-Here is what the type for `space` looks like:
-
+## Megaparsec Space Function
+`space` comes from `Text.Megaparsec.Lexer`.
 ```{.haskell}
 space :: MonadParsec e s m
       => m () -- ^ A parser for a space character (e.g. @'void' 'C.spaceChar'@)
@@ -46,21 +44,22 @@ space :: MonadParsec e s m
       -> m ()
 ```
 
-The first argument is a parser for space, we use `void spaceChar` here.
-[spaceChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Char.html#v:spaceChar)
-parses a space character, and
-[void](https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Functor.html#v:void)
-discards the parsed character.
+The type of `space` corresponds to the following:
 
-The second argument is a line comment parser. We use a function from
-_megaparsec_ called
-[skipLineComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipLineComment),
-which does what it says - skips line comments starting with the provided character, ";" in
-our case.
+  * The first argument is a parser for space, we use `void spaceChar` here.
+    [spaceChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Char.html#v:spaceChar)
+    parses a space character, and
+    [void](https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Functor.html#v:void)
+    discards the parsed character.
+  * The second argument is a line comment parser. We use a function from
+    _megaparsec_ called
+    [skipLineComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipLineComment),
+    which does what it says - skips line comments starting with the provided character, ";" in
+    our case.
 
-The last argument is a block comment parser, here we use
-[skipBlockComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipBlockComment).
-which parses and discards data between "/*" and "*/".
+  * The last argument is a block comment parser, here we use
+    [skipBlockComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipBlockComment).
+    which parses and discards data between "/*" and "*/".
 
 Using `spaceEater` we create a function called `lexeme` which uses [lexeme]() from _megaparsec_ to
 build a function that takes a parser and produces a parser which consumes trailing
@@ -74,6 +73,47 @@ typeclass, see
 <hr/>
 # The Parsers
 ## bytes
+### Properties
+First, let's write some properties!
+
+```{.haskell}
+newtype TwoCharHexString = TwoCharHexString T.Text deriving Show
+
+instance Arbitrary TwoCharHexString where
+  arbitrary = do
+    upper <- choose ('A', 'F')
+    lower <- choose ('a', 'f')
+    num   <- choose ('0', '9')
+    let vals = [upper, lower, num]
+    x <- elements vals
+    y <- elements vals
+    pure $ TwoCharHexString (T.pack (x:[y]))
+
+-- Should parse valid two char hexstring.
+prop_byte_parseValidData :: TwoCharHexString -> IO ()
+prop_byte_parseValidData (TwoCharHexString s) = parse byte "" s  `shouldParse` s
+
+-- When successful should not consume more input.
+prop_byte_parseSuccessShouldNotConsume :: TwoCharHexString -> IO ()
+prop_byte_parseSuccessShouldNotConsume (TwoCharHexString s) extra =
+  runParser' byte (initialState (T.append s extra)) `succeedsLeaving` extra
+```
+
+`byte` should parse a two character hex string, representing a byte, so we create a newtype
+`TwoCharHexString` to represent this. The `Arbitrary` instance is made up of a random
+selectoin of two characters from the set of upper case `A` to `F`, lower case `a` to `f`
+letters and any single digit. With this arbitrary instance _QuickCheck_ can now generate
+random instances of our `TwoCharHexString` type.
+
+Simple! We now have a property which checks that the parser parses what we expect and
+another which checks that it does not consume more input than it should. As of now I have
+nothing in mind for custom error messages, the ones _megaparsec_ spits out are generally
+useful enough for parsers this small, so for now I don't think there is a need for a property
+which checks the error case.
+
+Ok, now thats done, we have a spec for our implementation to follow!
+
+### Implementation
 The `bytes` parser parses two bytes, the second being optional. We can use our [single
 byte parser](/posts/2017-03-03-Building-an-assembler-in-haskell.html#implementation)
 (which we defined in the previous post) to parse each one, along with _megaparsec's_
@@ -91,13 +131,30 @@ bytes :: Parser T.Text
 bytes = do
   char '$'
   firstByte <- byte
-  anotherByte <- option "" byte
+  anotherByte <- option T.empty byte
   pure $ T.append firstByte anotherByte
 ```
+Run the properties and all should be green!
 
 <hr/>
 ## mnemonic
-The `mnemonic` parser is just a parser of three upper case characters. Here we use
+### Properties
+```{.haskell}
+newtype ValidMnemonic = ValidMnemonic T.Text deriving Show
+
+instance Arbitrary ValidMnemonic where
+  arbitrary = do
+    upper  <- choose ('A', 'Z')
+    pure $ ValidMnemonic (T.pack [upper, upper, upper])
+
+prop_mnemonic_parseValidMnemString (ValidMnemonic s) =
+  parse mnemonic "" s `shouldParse` (Mnemonic s)
+```
+Really simple, a valid mnemonic is any upper case three letter string, so that's exactly
+what our `Arbitrary` instance specifies.
+
+### Implementation
+Here we use
 _megaparsec's_ [count](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:count)
 and [upperChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:upperChar)
 functions.
@@ -237,6 +294,10 @@ labelAssign = lexeme $ label <* char ':'
 `<*` is similar to `<*>`, the difference is `<*` discards the value of the second argument.
 In our case `label <* char ':'` says parse a label, then parse a ':' but discard it, so it's
 not part of the `Label` which `labelAssign` builds.
+
+<hr/>
+## operand
+
 
 <hr/>
 # Conclusion
