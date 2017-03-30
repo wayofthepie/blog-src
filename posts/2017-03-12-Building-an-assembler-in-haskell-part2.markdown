@@ -8,7 +8,8 @@ In the last post we wrote a grammar for a simple assembly language, wrote the ou
 derived some properties from the grammar for a simple parser `byte` and implemented `byte`.
 We also saw that there are a few deficiencies in our grammar. In this post I want to
 fully implement the language we spec'd, no improvements or changes from the grammar, just
-the implementation!
+the implementation. For each parser I'll start with some _QuickCheck_ properties the use
+those as the spec to implement the parser. Lets get to it!
 
 <hr/>
 # Lexemes And Space
@@ -71,8 +72,8 @@ typeclass, see
 [Jump Into The Parser Types](#jump-into-the-parser-types) for more info.
 
 <hr/>
-## bytes
-### Properties
+# bytes
+## Properties
 First, let's write some properties!
 
 ```{.haskell}
@@ -121,7 +122,7 @@ which checks the error case.
 
 Ok, now thats done, we have a spec for our implementation to follow!
 
-### Implementation
+## Implementation
 The `bytes` parser parses two bytes, the second being optional. We can use our [single
 byte parser](/posts/2017-03-03-Building-an-assembler-in-haskell.html#implementation)
 (which we defined in the previous post) to parse each one, along with _megaparsec's_
@@ -145,8 +146,8 @@ bytes = do
 Run the properties and all should be green!
 
 <hr/>
-## mnemonic
-### Properties
+# mnemonic
+## Properties
 ```{.haskell}
 newtype ValidMnemonic = ValidMnemonic T.Text deriving Show
 
@@ -161,7 +162,7 @@ prop_mnemonic_parseValidMnemString (ValidMnemonic s) =
 Really simple, a valid mnemonic is any upper case three letter string, so that's exactly
 what our `Arbitrary` instance specifies.
 
-### Implementation
+## Implementation
 Here we use
 _megaparsec's_ [count](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:count)
 and [upperChar](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec.html#v:upperChar)
@@ -192,7 +193,7 @@ So what does this actually do?
     [Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html#t:Functor).
 
 
-### Putting it all together...
+## Putting it all together...
 Putting it all together, what we get is a function which parses three upper case characters as a `String`,
 we then map `Mnemonic . T.pack` over the
 value that `mnem` parses which packs it into a `Text` value and builds a
@@ -200,8 +201,8 @@ value that `mnem` parses which packs it into a `Text` value and builds a
 with `lexeme`.
 
 <hr/>
-## label
-### Properties
+# label
+## Properties
 ```{.haskell}
 newtype LabelWithLetter = LabelWithLetter T.Text deriving Show
 newtype LabelWithNonLetter = LabelWithNonLetter T.Text deriving Show
@@ -236,7 +237,7 @@ We've seen `shouldParse`, it was used in the `bytes` parser, however we haven't 
 [shouldFailWith](https://hackage.haskell.org/package/hspec-megaparsec-0.3.1/docs/Test-Hspec-Megaparsec.html#v:shouldFailWith)
 yet and there seems to be quite a bit to it! Lets break it down.
 
-#### shouldFailWith
+### shouldFailWith
 Sometimes you want to verify that a parser fails on a given input. Not only that, but you
 want to verify that the error which is given on that failure contains the right message,
 positioin information, etc... `shouldFailWith` allows you to do this. Lets have a look at
@@ -291,7 +292,12 @@ information in the error.
     [Monoid](https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Monoid.html#t:Monoid)
     instance) - i.e. `utok (T.head lbl) <> elabel "letter"`.
 
-### Implementation
+In English, we expect the `label` parser to fail on any string which does not start with a
+letter and the error information should say that it failed at the initial position because
+of an unexpected token (giving the actual unexpected character) and finally that it expected
+to see a letter here.
+
+## Implementation
 ```{.haskell}
 label :: Parser Label
 label = lexeme $ Label . T.pack <$> ((:) <$> letterChar <*>  many alphaNumChar)
@@ -321,7 +327,7 @@ yet.  `<*>` ("apply") is from the
 typeclass, it is just function application for _Applicative Functors_ (see
 [Applicative Functors](#applicative-functors) for more info).
 
-### Breaking it down
+## Breaking it down
 Now the interesting bit. `letterChar` will parse a single `Char`, and `many alphaNumChar` will parse a `String`, which
 is a `[Char]`, we need a way of combining the values produced from these parsers so we just
 get a `[Char]`.
@@ -370,7 +376,7 @@ over the value of `many alphaNumChar`, which itself has type `Parser [Char]`. Le
 Now we have the value we want, our letter char combined with many alpha-numeric chars,
 with the type `Parser [Char]` (or `Parser String`).
 
-### Packing It Up
+## Packing It Up
 Following the example above we now have:
 
 ```{.haskell}
@@ -379,10 +385,13 @@ label = lexeme $ Label . T.pack <$> (p "cabc123")
 
 With our parsed string, we pack it into a `Text` value, wrap it up in a `Label`
 and parse possible whitespace with `lexeme`. We've seen this above in other
-parsers, no need to repeat. So that's `label` implemented!
+parsers, no need to repeat.
+
+Phew! There was quite a lot to implementing `label` but we're done now, and can use this
+info later in other parsers.
 
 <hr/>
-## labelAssign
+# labelAssign
 Now that `label` is complete, `labelAssign` is simple:
 
 ```{.haskell}
@@ -394,7 +403,7 @@ In our case `label <* char ':'` says parse a label, then parse a ':' but discard
 not part of the `Label` which `labelAssign` builds.
 
 <hr/>
-## operand
+# operand
 
 
 <hr/>
