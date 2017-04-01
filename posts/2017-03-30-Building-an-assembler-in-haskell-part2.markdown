@@ -51,6 +51,11 @@ lexeme = L.lexeme spaceEater
 function to build a parser that consumes and discards whitespace and comments. Note that it is
 prefixed with `L.` here (`L.space`) because `Text.Megaparsec.Lexer` is imported qualified as
 `L`, see [here](https://github.com/wayofthepie/emu-mos6502-asm-blog/blob/e454cce2af3c938e229f1d60a2f3c3d0bf3a3adb/src/Assembler.hs#L6).
+Using `spaceEater` we create a function called `lexeme` which we will use to _wrap_ parsers
+so they also consume trailing whitespace. This uses
+[lexeme](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:lexeme)
+from _megaparsec_ which takes a space parser, in our case `spaceEater`, and a parser for a
+lexeme.
 
 ## Megaparsec Space Function
 `space` comes from `Text.Megaparsec.Lexer`.
@@ -74,14 +79,9 @@ The type of `space` corresponds to the following:
     [skipLineComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipLineComment),
     which does what it says - skips line comments starting with the provided character, ";" in
     our case.
-
   * The last argument is a block comment parser, here we use
     [skipBlockComment](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Lexer.html#v:skipBlockComment),
     which parses and discards data between "/*" and "*/".
-
-Using `spaceEater` we create a function called `lexeme` which uses [lexeme]() from _megaparsec_ to
-build a function that takes a parser and produces a parser which consumes trailing
-whitespace and comments, with our `spaceEater`.
 
 I left out the description of the
 [MonadParsec](https://hackage.haskell.org/package/megaparsec-5.2.0/docs/Text-Megaparsec-Prim.html#t:MonadParsec)
