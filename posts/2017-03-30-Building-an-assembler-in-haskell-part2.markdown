@@ -4,17 +4,34 @@ tags: haskell, emulator
 ---
 
 # Review
-In the last post we wrote a grammar for a simple assembly language, wrote the outline of our parser,
+In the
+[previous post](/posts/2017-03-03-Building-an-assembler-in-haskell.html)
+we wrote a grammar for a simple assembly language, wrote the outline of our parser,
 derived some properties from the grammar for a simple parser `byte` and implemented `byte`.
 We also saw that there are a few deficiencies in our grammar. In this post we'll implement
 `bytes`, `menmonic`, `label` and `labelAssign`. For each parser I'll start with some _QuickCheck_
 properties then use those as the spec to implement the parser. Let's get to it!
 
 <hr/>
+# Imports
+First, the imports for modules we use, that should make it clearer where functions are
+coming from.
+
+```{.haskell}
+import Control.Monad (void)
+import qualified Data.Text as T       -- from the "text" package
+import Text.Megaparsec hiding (Label, label) -- from the "megaparsec" package
+import qualified Text.Megaparsec.Lexer as L -- from the "megaparsec" package
+```
+Note that `Text.Megaparsec` contains a type `Label` and a function `label`, we use both
+these as names for our own type and function for label parsing, so we hide them when
+importing.
+
+<hr/>
 # Lexemes And Space
 The _lexemes_ of a language are the smallest syntactic unit. _Tokens_ are categories of
 _lexemes_. In our case, the _"STORE"_ string is an example of a lexeme in the category of
-_label_ tokens. Let's also assume we can safely eat any whitespace proceeding lexemes.
+_label_ tokens. Let's assume we can safely eat any whitespace proceeding lexemes.
 With this in mind, and before we continue implementing the parsers for our language,
 let's create convenience functions for parsing trailing space after our lexemes.
 
@@ -226,7 +243,7 @@ prop_label_invalidLabelString (LabelWithNonLetter lbl) =
   parse label "" lbl `shouldFailWith`  err posI (utok (T.head lbl) <> elabel "letter")
 ```
 `label` is a little more involved than the last few parsers. In this case we want to verify
-that if does fail when trying to parse a string that does not start with a letter. So we
+that it fails when trying to parse a string that does not start with a letter. So we
 need two `Arbitrary` instances - the first, `LabelWithLetter`, is for all letter strings which
 start with a letter and the second, `LabelWithNonLetter`, is for strings which start with a
 non letter character.
@@ -286,7 +303,11 @@ information in the error.
   * It was expected to be a letter, `elabel letter`.
   * Finally we combine the unexpected token and expected token into one
     [EC](https://hackage.haskell.org/package/hspec-megaparsec-0.3.1/docs/Test-Hspec-Megaparsec.html#t:EC)
-    using `<>` (this is from `EC`'s
+    using
+    [<>](https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Monoid.html#v:-60--62-)
+    which is an infix synonymn for
+    [mappend](https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Monoid.html#v:mappend)
+    (this is from `EC`'s
     [Monoid](https://hackage.haskell.org/package/base-4.9.0.0/docs/Data-Monoid.html#t:Monoid)
     instance) - i.e. `utok (T.head lbl) <> elabel "letter"`.
 
