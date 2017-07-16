@@ -315,8 +315,8 @@ Destroy complete! Resources: 0 destroyed.
 
 # Conclusion
 There's not much to codifying a cluster setup on Google Cloud. Note that there are some limitations,
-one of the bigger ones being updates, you cannot update the `google_container_cluster` without terraform
-destroying the initial cluster and createing a new one. Depending on how you plan to apply updates this may
+one of the bigger ones being updates, you cannot update the `google_container_cluster` resource without terraform
+destroying the initial cluster and creating a new one. Depending on how you plan to apply updates this may
 or may not be a problem - for example you could choose to create _an entire new cluster_ with updates
 and migrate any existing workloads on the old onto the new , finally destroying the old one.
 
