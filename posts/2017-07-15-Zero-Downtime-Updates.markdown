@@ -48,7 +48,7 @@ Just a few more lines, and we can build our cluster!
 The definition for the [Container Cluster](https://cloud.google.com/container-engine/)
 itself is quite short. Let's create another file called `init.tf`.
 
-```
+```{.hcl}
 provider "google" {
   region  = "${var.region}"
   project = "${var.project}"
@@ -271,8 +271,8 @@ State path:
 ```
 
 ## List The Nodes
-Did it actually work? Let's test. To retrieve the credentials and load the context for
-our cluster into kubectl:
+Did it actually work? Before we can test, we need to get some credentials. To retrieve
+the credentials for the cluster:
 
 ```{.bash}
 $ gcloud container clusters get-credentials test-cluster --zone europe-west1-b --project my-project
