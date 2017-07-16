@@ -14,19 +14,19 @@ td.lineNumbers {
     padding-left: 5px;
 }
 td.sourceCode { padding-left: 5px; }
-.sourceCode span.kw { color: #007020; font-weight: bold; }
-.sourceCode span.dt { color: #902000; }
+.sourceCode span.kw { color: #007020; }
+.sourceCode span.dt { color: lightblue; }
 .sourceCode span.dv { color: #40a070; }
 .sourceCode span.bn { color: #40a070; }
 .sourceCode span.fl { color: #40a070; }
 .sourceCode span.ch { color: #4070a0; }
 .sourceCode span.st { color: #4070a0; }
-.sourceCode span.co { color: #60a0b0; font-style: italic; }
-.sourceCode span.ot { color: #007020; }
-.sourceCode span.al { color: red; font-weight: bold; }
-.sourceCode span.fu { color: #06287e; }
+.sourceCode span.co { color: #60a0b0; }
+.sourceCode span.ot { color: grey; }
+.sourceCode span.al { color: red; }
+.sourceCode span.fu { color: grey; }
 .sourceCode span.re { }
-.sourceCode span.er { color: red; font-weight: bold; }
+.sourceCode span.er { color: red; }
 
 .no-highlight {
   color: none;
@@ -40,4 +40,5 @@ pre {
 pre code {
   overflow-wrap: normal !important;
   white-space: pre !important;
+  font-weight: bold !important;
 }
