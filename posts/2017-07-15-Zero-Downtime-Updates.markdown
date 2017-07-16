@@ -275,7 +275,7 @@ Did it actually work? Let's test. To retrieve the credentials and load the conte
 our cluster into kubectl:
 
 ```{.bash}
-$ gcloud container clusters get-credentials test-cluster --zone ${our_zone} --project my-project
+$ gcloud container clusters get-credentials test-cluster --zone europe-west1-b --project my-project
 Fetching cluster endpoint and auth data.
 kubeconfig entry generated for test-cluster.
 ```
