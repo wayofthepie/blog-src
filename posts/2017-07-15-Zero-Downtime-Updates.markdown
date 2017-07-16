@@ -1,6 +1,6 @@
 ---
 title: "Terraform, Google Cloud And Kubernetes"
-tags: systems
+tags: systems,infra-auto
 ---
 
 # Introduction
@@ -11,12 +11,12 @@ Kubernetes Container Cluster.
 
 ## Setup
 Before we begin, if you want to run any of the code, you'll need an account on google cloud.
-Also if you do not know what either
+If you do not know what either
 [GCP](https://www.terraform.io/docs/providers/google/index.html#authentication-json-file),
 [Terraform](https://www.terraform.io/docs/providers/google/index.html#authentication-json-file)
 or [Kubernetes](https://www.terraform.io/docs/providers/google/index.html#authentication-json-file)
-are you should follow those linksw. Note that you will also need the
-[google cloud sdk](https://cloud.google.com/sdk/), we will use the `gcloud` cli, and also
+are you should follow those links. Note that you will also need the
+[google cloud sdk](https://cloud.google.com/sdk/) (as we will be using the `gcloud` cli) and also
 the kubernetes cli, [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 Once you are ready, you will need to create an auth json file as described
 [here](https://www.terraform.io/docs/providers/google/index.html#authentication-json-file), and
@@ -28,7 +28,7 @@ of the functionality of GCP. It also has a [backend](https://www.terraform.io/do
 for storing state on [Google Cloud Storage](https://cloud.google.com/storage/) (GCS). By default
 terraform will store the state locally, so this backend is not required, but it is good practice [^1].
 
-Lets set up our backend to store terraforms state on GCS. In a file called `backend.tf`:
+Let's set up our backend to store terraforms state on GCS. In a file called `backend.tf`:
 
 ```
 terraform {
@@ -46,7 +46,7 @@ Just a few more lines, and we can build our cluster!
 
 ## Cluster Definition
 The definition for the [Container Cluster](https://cloud.google.com/container-engine/)
-itself is quite short. Lets create another file called `init.tf`.
+itself is quite short. Let's create another file called `init.tf`.
 
 ```
 provider "google" {
@@ -75,7 +75,7 @@ resource "google_container_cluster" "primary" {
 }
 
 ```
-That's it! This will build a three node container cluster. Breaking it down:
+That's it! This will build a three node kubernetes container cluster. Breaking it down:
 
   * `provider "google"` : this says we want to use the
     [Google Cloud Provider](https://www.terraform.io/docs/providers/google/index.html).
@@ -117,7 +117,7 @@ kube_password = "testpassword"
 ```
 
 # Launching Our Cluster
-Lets put everything together and launch our cluster! You should have the following four files:
+Let's put everything together and launch our cluster! You should have the following four files:
 
 ```
 $ ls
@@ -127,7 +127,7 @@ backend.tf  init.tf  terraform.tfvars  variables.tf
 There is one more step before we can launch. If you try to run `terraform apply`
 or `terraform plan` you will get the following error:
 
-```
+```{.bash}
 $ terraform plan
 Backend reinitialization required. Please run "terraform init".
 Reason: Initial configuration of the requested backend "gcs"
@@ -141,7 +141,7 @@ the Terraform backend.
 ```
 Trying to run `terraform init` will also give an error:
 
-```
+```{.bash}
 $ terraform init
 Initializing the backend...
 
@@ -158,7 +158,7 @@ in the **Setup** section above. If you missed this, the instructions can be foun
 Download the json file and place it under `~/.gcp_creds.json`. Now we can finally start running things!
 
 The envvar `GOOGLE_APPLICATION_CREDENTIALS` tells terraform where to find the creds. To initialize the backend:
-```
+```{.bash}
 $ GOOGLE_APPLICATION_CREDENTIALS=~/.gcp_creds.json terraform init
 Initializing the backend...
 
@@ -170,8 +170,8 @@ Terraform has been successfully initialized!
 ...
 ```
 
-Lets see what terraform will build with `terraform plan`:
-```
+Let's see what terraform will build with `terraform plan`:
+```{.bash}
 $ GOOGLE_APPLICATION_CREDENTIALS=~/.gcp_creds.json terraform plan
 Refreshing Terraform state in-memory prior to plan...
 The refreshed state will be used to calculate this plan, but will not be
@@ -222,7 +222,7 @@ Plan: 1 to add, 0 to change, 0 to destroy.
 ```
 Finally, let's build our cluster:
 
-```
+```{.bash}
 $ GOOGLE_APPLICATION_CREDENTIALS=~/.gcp_creds.json terraform apply
 google_container_cluster.primary: Creating...
   additional_zones.#:                   "" => "<computed>"
@@ -270,9 +270,36 @@ State path:
 ...
 ```
 
+## List The Nodes
+Did it actually work? Let's test. To retrieve the credentials and load the context for
+our cluster into kubectl:
+
+```{.bash}
+$ gcloud container clusters get-credentials test-cluster --zone ${our_zone} --project my-project
+Fetching cluster endpoint and auth data.
+kubeconfig entry generated for test-cluster.
+```
+
+Switch to this context in kubectl:
+
+```{.bash}
+$ kubectl config set-cluster test-cluster
+Cluster "test-cluster" set.
+```
+
+Now should be able to list the nodes:
+
+```{.bash}
+$ kubectl get nodes
+NAME                                          STATUS    AGE
+gke-test-cluster-default-pool-a1844955-h5w0   Ready     3m
+gke-test-cluster-default-pool-a1844955-vc3l   Ready     3m
+gke-test-cluster-default-pool-a1844955-wf4v   Ready     3m
+```
+
 Excellent! To destroy the cluster simply run:
 
-```
+```{.bash}
 $ GOOGLE_APPLICATION_CREDENTIALS=~/.gcp_creds.json terraform destroy
 Do you really want to destroy?
   Terraform will delete all your managed infrastructure.
@@ -285,19 +312,20 @@ google_container_cluster.primary: Refreshing state... (ID: test-cluster)
 Destroy complete! Resources: 0 destroyed.
 ```
 
+
 # Conclusion
 There's not much to codifying a cluster setup on Google Cloud. Note that there are some limitations,
 one of the bigger ones being updates, you cannot update the `google_container_cluster` without terraform
 destroying the initial cluster and createing a new one. Depending on how you plan to apply updates this may
-or may not be a problem - for example you could choose to create _and entire new_ cluster with any updates
-and migrate any existing workloads on the old onto the new one, finally destroying the old one.
+or may not be a problem - for example you could choose to create _an entire new cluster_ with updates
+and migrate any existing workloads on the old onto the new , finally destroying the old one.
 
 Now that you have a kubernetes cluster, you can also manage this using the
 [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html), I'll leave that
 for another post.
 
-The code form this post was adapted from a project I'm toying about with. You can view the code up
-to this post [here](https://github.com/wayofthepie/forge-gcp/tree/b9baf63bd30f5c31fc858c6bf68cc303ce2f0532),
+The code from this post was adapted from a project I'm toying about with. You can view the code up
+to this post [here](https://github.com/wayofthepie/forge-gcp/tree/tfblog01),
 note that some resource values are different.
 
 [^1]: [Remote State](https://www.terraform.io/docs/state/remote.html).
