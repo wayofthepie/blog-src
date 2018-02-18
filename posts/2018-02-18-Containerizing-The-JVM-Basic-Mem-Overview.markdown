@@ -376,15 +376,17 @@ $ cat /sys/fs/cgroup/memory/docker/${CONTAINER_ID}/memory.limit_in_bytes
 524288000
 
 # Again, this time without limits to see the difference
-$ docker run -d --rm --memory 500M --memory-swappiness 0 --name memeater jvm-test bash^C
+$ docker run -d --rm --name memeater jvm-test 
+d3e25423814ee1d79759aa87a83d416d63bdb316a305e390c2b8b98777484822
+$ CONTAINER_ID=`docker ps --no-trunc | awk '{if (NR!=1) print $1}'`
 $ echo $CONTAINER_ID
-52dfe3b591f851af2e2f74e033cdeddf04eb08537f3cede957be5c45ea229df1
+d3e25423814ee1d79759aa87a83d416d63bdb316a305e390c2b8b98777484822
 $ cat /sys/fs/cgroup/memory/docker/${CONTAINER_ID}/memory.swappiness 
 60
 $ cat /sys/fs/cgroup/memory/docker/${CONTAINER_ID}/memory.limit_in_bytes
 9223372036854771712
-
 ```
+
 <div class="alert alert-warning">
 Note the `WARNING`, I'm not entirely sure why this appears as swap support is enabled, and seems to work. 
 You can ignore this for now.
