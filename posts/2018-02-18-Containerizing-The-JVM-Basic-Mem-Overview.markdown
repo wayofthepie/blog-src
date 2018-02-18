@@ -170,7 +170,7 @@ If we zoom in, the heap has different areas within
 which we can talk about, depending on what we want to discuss - there is the Eden space, where most
 new objects are initially created, the Survivor space, where objects go if they survive an Eden space
 garbage collection (GC) and the Old Generation which contains objects that have lived in 
-Survivor Space for a while. It contains objects that have been initialized - e.g. 
+Survivor space for a while. Specifically, it contains objects that have been initialized - e.g. 
 `List<String> s = new ArrayList<String>();` will create an `ArrayList` object on the heap, and `s`
 will point to this.
 
