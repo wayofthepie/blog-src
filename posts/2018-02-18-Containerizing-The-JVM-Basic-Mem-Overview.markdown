@@ -199,21 +199,16 @@ $ docker build --tag jvm-test .
 $ docker run -ti --rm --name hello-jvm jvm-test
 Hello world!
 ```
-In another terminal, exec into the container and get a baseline with `jcmd`'s `VM.native_memory` command:
+In another terminal, exec into the container and get a summary of overall memory usage 
+with `jcmd`'s `VM.native_memory` command:
 
 ```bash
 $ docker exec --privileged -ti hello-jvm bash
 root@aa5ae77e1305:/ $ jcmd 
 33 sun.tools.jcmd.JCmd
 7 HelloWorld
-root@aa5ae77e1305:/ $ jcmd 7 VM.native_memory baseline
-7:
-Baseline succeeded
-```
-Finally, to get a summary of used memory:
 
-```bash
-root@aa5ae77e1305:/# jcmd 7 VM.native_memory summary
+root@aa5ae77e1305:/ $ jcmd 7 VM.native_memory summary
 7:
 
 Native Memory Tracking:
