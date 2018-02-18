@@ -13,7 +13,7 @@ These containers have memory limits set on application creation, they use cgroup
 just as docker does - if the sum of the memory allocated to each process within the container
 exceeds the limit, the kernel _oom-killer_ will kick in and kill the container. The main issue we've seen with JVM 
 applications is non-heap memory. Tracking and tuning the heap is trivial in comparison to tracking 
-and tuning non-heap memory usage - by non-heap I dont just mean _Metaspace_, but also 
+and tuning non-heap memory usage - by non-heap I don't just mean _Metaspace_, but also 
 direct buffers, code cache, stack sizes, and so on.
 
 I've been wanting to do a series of posts
@@ -171,14 +171,14 @@ which we can talk about, depending on what we want to discuss - there is the Ede
 new objects are initially created, the Survivor space, where objects go if they survive an Eden space
 garbage collection (GC) and the Old Generation which contains objects that have lived in 
 Survivor Space for a while. It contains objects that have been initialized - e.g. 
-`List<String> s = new ArrayList<String>();` will create an arraylist object on the heap, and `s`
+`List<String> s = new ArrayList<String>();` will create an `ArrayList` object on the heap, and `s`
 will point to this.
 
 In the previous section I ran through what objects are loaded into the heap for our HelloWorld program,
 so what about non-heap memory?
 
 ## Non-Heap Memory 
-If you have ever written a non-trivial java application with jdk8 you have probably heard of Metaspace.
+If you have ever written a non-trivial java application with jdk8 you have probably heard of _Metaspace_.
 This is an example of non-heap memory. It's where the JVM will store class definitions, static variables, methods, 
 classloaders and other metadata. But there are many other non-heap memory regions the JVM will use.
 Let's list them! 
@@ -267,7 +267,7 @@ A lot more regions than just the heap! Our hello world program just got even mor
 What does all this mean? [^1]
 
   * **Java Heap** : heap memory. 
-  * **Class** : is the `Metaspace`` region we previously spoke about.
+  * **Class** : is the _Metaspace_ region we previously spoke about.
   * **Thread** : is the space taken up by threads on this JVM's.
   * **Code** : is the code cache - this is used by the JIT to cache compiled code.
   * **GC** : space used by the garbage collector.
@@ -346,7 +346,7 @@ Killed
 After a few seconds you should see the output above, `Killed`. What happened? Before we dive into that, lets have
 a look at the `--memory` and `--memory-swappiness` flags used by `docker`.
 
-### Limitting memory with docker
+### Limiting memory with docker
 Lets digress for a second, and look at the two docker flags I used above for controlling memory settings [^7].
 First, for these flags to work, your kernel will need to have cgroup support enabled and the following boot 
 parameters set (assuming `grub`):
@@ -457,7 +457,7 @@ With a heap issue, if we hit an out of memory error with `Java Heap Space` as th
 immediately that the cause is the heap and we are either allocating too much, or we need to increase 
 the heap (actually identifying the underlying cause of this overallocation in the code is another issue...). 
 When the OOM killer kills our process, it's not so straightforward - it could be direct buffers,
-unconstrained heap memory areas (Metaspace, Code cache etc...) or even another process within the container.
+unconstrained heap memory areas (_Metaspace_, Code cache etc...) or even another process within the container.
 There is quite a bit to cover when investigating. On that note, I'll finish this post.
 
 # Conclusion
