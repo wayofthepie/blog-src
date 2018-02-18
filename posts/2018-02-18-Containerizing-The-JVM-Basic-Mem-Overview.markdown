@@ -1,5 +1,5 @@
 ---
-title: "Containerizing The JVM: Memory Usage Overview"
+title: "Containerizing The JVM: Basic Memory Overview"
 tags: jvm,container
 ---
 
@@ -30,12 +30,13 @@ a linux system (I used ubuntu 16.04 to write this post).
 To start I'm going to keep things super simple. Let's build a program
 which prints "Hello world!" and waits forever:
 
-```java
+```{.java}
+// HelloWorld.java
 public class HelloWorld {
-  public static void main(String[] args) throws Exception {
-    System.out.println("Hello world!");
-    System.in.read();
-  }
+    public static void main(String[] args) throws Exception {
+        System.out.println("Hello world!");
+        System.in.read();
+    }
 }
 ```
 
@@ -135,16 +136,16 @@ To see this for yourself:
 ```java
 // InstanceName.java
 public class InstanceName {
-  public static void main(String[] args) throws Exception {
-    int[] is = new int[3];
-    System.out.println(is.getClass().getName());
+    public static void main(String[] args) throws Exception {
+      int[] is = new int[3];
+      System.out.println(is.getClass().getName());
 
-    boolean[][][] bs = new boolean[2][5][4];
-    System.out.println(bs.getClass().getName());
+      boolean[][][] bs = new boolean[2][5][4];
+      System.out.println(bs.getClass().getName());
 
-    String[] ss = new String[3];
-    System.out.println(ss.getClass().getName());
-  }
+      String[] ss = new String[3];
+      System.out.println(ss.getClass().getName());
+    } 
 }
 ```
 Compiling and running this we get:
