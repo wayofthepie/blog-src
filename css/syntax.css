@@ -35,10 +35,16 @@ td.sourceCode { padding-left: 5px; }
 /* Overflow x in code blocks */
 pre {
   overflow-x: auto !important;
-}
+} 
 
 pre code {
   overflow-wrap: normal !important;
   white-space: pre !important;
   font-weight: bold !important;
+}
+
+p code {
+    color: black;
+    font-weight: bold;
+    background-color: #F0F8FF;
 }
