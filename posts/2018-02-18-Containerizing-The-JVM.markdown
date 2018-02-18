@@ -1,5 +1,5 @@
 ---
-title: "Containerizing The JVM"
+title: "Containerizing The JVM: Memory Usage Overview"
 tags: jvm,container
 ---
 
@@ -12,16 +12,17 @@ bounded containers.
 Cloud foundry runs applications inside [garden containers](https://www.cloudfoundry.org/blog/cloud-foundry-containers-difference-warden-docker-garden/). 
 These containers have memory limits set on application creation, they use cgroups
 just as docker does and if the sum of the memory allocated to each process within the container
-exceeds the limit, the kernel oom-killer will kick in and kill the while container. This has 
-been the main issue we've seen with JVM applications, Non-Heap Memory. Tracking and tuning the 
+exceeds the limit, the oom-killer will kick in and kill the while container.  
+The main issue we've seen with JVM applications is Non-Heap Memory. Tracking and tuning the 
 heap is trivial in comparison to tracking and tuning non-heap memory usage in the JVM - by non-heap
-I dont just mean Metaspace, but also, direct buffers, code cache, stack sizes, and so on.
+I dont just mean Metaspace, but also direct buffers, code cache, stack sizes, and so on.
 
 I've been wanting to do a series of posts
 on the topic of JVM's in containers for a while, I finally put the time aside to start!
 
 I'm going to keep this post short and just give an overview of the heap and non-heap 
-memory regions of the JVM, with some small introduction to both.
+memory regions of the JVM, with some small introduction to both. This post assumes some
+basic knowledge of Java, the JVM and docker. It also assumes you have docker and openjdk 8 installed. 
 
 # Containerizing a java app
 To start I'm going to keep things super simple. Let's build a program
@@ -57,8 +58,8 @@ You can use CTRL-C to kill the container when you are done. Right, now we have a
 program running, what can we do? Let's analyze the JVM.
 
 ## Basic JVM analysis
-We can get a list of how many instances of certain objects we have within our application. First, get into the container
-and get the JVM processes PID.
+Lets get a list what objects we have on the heap within our application. 
+First, get into the container and get the JVM processes PID.
 
 ```bash
 $ docker exec -ti hello-jvm bash
@@ -66,8 +67,9 @@ root@5f20ae043968:/ $ ps aux|grep [j]ava
 root         1  0.1  0.0   4292   708 pts/0    Ss+  12:27   0:00 /bin/sh -c java HelloWorld
 root         7  0.2  0.1 6877428 23756 pts/0   Sl+  12:27   0:00 java HelloWorld
 ```
-From the above, we see the PID is 7. `jmap` is a tool which allows us to view heap information about
-a JVM process, lucky for us it comes with the openjdk install which is in our image. 
+From the above, we see the PID is 7. For analysis, the openjdk comes with a number of tools.
+`jmap` is one such tool which allows us to view heap information about
+a JVM process.
 To get a list of objects, their number of instances and the space they take up in the heap
 you can use `jmap -histo <JVM_PID>`.
 
@@ -102,14 +104,6 @@ Total          6583        2642792
 As you can see above there are 6583 instances of a mixture of 222 different classes, taking
 up over 2.6MB of the heap, for our simple HelloWorld program! When I first saw this it raised
 a lot of questions - what is `[I`, why is there a `java.lang.String` and a `[Ljava.lang.String`?
-This information is certainly important to know, but is not really neccessary if all
-you want to do is containerize a JVM app. However we'll see later on that it's not just the heap
-you have to worry about, there are many other memory regions the JVM uses to store things which 
-may catch you out. 
-
-So even though not neccessary, I think this knowledge is paramount to
-a deeper understanding of what your application is actually running on. So, I'm going to dive into
-some of the more obscure classes above.
 
 ## What are all these classes?
 First off, the single letter class names. These are all documented under [Class.getName()](https://docs.oracle.com/javase/6/docs/api/java/lang/Class.html#getName()).
@@ -174,7 +168,8 @@ garbage collection (GC) and the Old Generation which contains objects that have 
 Survivor Space for a while. The contains objects that have been initialize - e.g. 
 `List<String> s = new ArrayList<String>();` will create an arraylist object on the heap.
 
-So what is contained within non-heap memory?
+In the previous section I ran through what classes are loaded into the heap for our HelloWorld program,
+so what about non-heap memory?
 
 ## Non-Heap Memory 
 If you have ever written a non-trivial java application with jdk8 you have probably heard of metaspace.
@@ -273,9 +268,75 @@ What does all this mean? [^1]
   * **Compiler** : space used by the JIT when generating code.
   * **Symbols** : this is for symbols, by which I believe field names, method signatures fall under. [^2]
   * **Native Memory Tracking** : memory used by the native memory tracker itself.
-  * **Arena Chunk** : not entirely sure what this gets used for
+  * **Arena Chunk** : not entirely sure what this gets used for. [^3]
 
+# Practical Issues
+Ok, so why should I care about any of the above? Let's create an app that eats a tonne of memory.
 
+```java
+// MemEater.java
+import java.util.Vector;
+
+public class MemEater {
+    public static final void main(String[] args) throws Exception {
+        Vector<byte[]> v = new Vector<byte[]>();
+        for (int i = 0; i < 400; i++) {
+            byte[] b = new byte[1048576]; // allocate 1 MiB
+            v.add(b);
+        }
+        System.out.println(v.size());
+        Thread.sleep(10000);
+    }
+}
+```
+This will create a `Vector` which contains 400 byte arrays of size 1 MiB[^4], so this will create a heap of ~400MiB in size.
+It will then sleep for 10 seconds so we can get the memory usage easily while it runs.
+Let's constrain the heap to 450MiB and run this locally we can see the actual memory usage of the process of the process. 
+RSS Resident Set Size [^5] is how this is measured, note that this value also contains pages mapped from _shared memory_, 
+but we can gloss over that for this post.
+
+So, lets compile our app, run in the background and get its RSS:
+
+```bash
+$ javac MemEater.java 
+$ nohup java -Xms450M -Xmx450M MemEater & 
+$ ps aux | awk 'NR==1; /[M]emEater/' 
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+chaospie 18019 10.5  3.0 3138368 494448 pts/19 Sl   16:06   0:00 java -Xms450M -Xmx450M MemEater
+```
+In total, the JVM process needs about 500 MiB to run. What happens if we set the heap to a size lower than it needs?
+
+```bash
+$ java -Xms400M -Xmx400M MemEater
+Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
+	at MemEater.main(MemEater.java:7)
+```
+If you have used java (or any JVM language) before, you have more than likely come across this. It means that the 
+JVM ran out of heap space to allocate objects. There are quite a few other types of `OutOfMemoryError` the JVM can 
+throw in certain situations [^6], but I won't go into more detail right now.
+
+Ok, so now we know what happens if the JVM does not have enough heap space, what about the case where you are running 
+in a container, have plenty of heap space, but you hit the overall memory limit?
+
+The simplest way to reproduce this is to package up our `MemEater` program into a docker image and run it with 
+less memory than it needs.
+
+```dockerfile
+```
+
+# Conclusion
+There is quite a lot more that could be said about heap and non-heap memory, but I want to keep this 
+initial post short, it's just meant to be a basic intro to JVM memory usage. Hopefully, if you took anything
+away from this post, it's that there is much more to think about than just the heap when using the JVM - 
+especially in memory bound containers.
+
+In the next post I'll dive 
+into non-heap memory in more depth, create and run a real containerized application, and go through the 
+pitfalls of tuning within containerized environment.
 
 [^1]: See [NMT details](https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/tooldescr022.html).
 [^2]: This one I need to look up more in-depth, as I have not been able to find solid information on it.
+[^3]: Arena Chunk seems to be related to malloc arenas, will definitely look into this in-depth.
+[^4]: 1 MiB = 1024 KiB = 1048576 bytes. Why use MiB? Because MB is ambiguous and can mean 1000 KB or 1024 KB, whereas MiB is always 1024 KiB.
+[^5]: See [this great answer](https://stackoverflow.com/questions/7880784/what-is-rss-and-vsz-in-linux-memory-management#answer-21049737) for a description of RSS.
+[^6]: A detailed description of them can be found [here](https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/memleaks002.html).

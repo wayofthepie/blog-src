@@ -346,13 +346,15 @@ yet.  `<*>` ("apply") is from the
 typeclass, it is just function application for _Applicative Functors_.
 
 ### Functor/Applicative Quick Description
-I'll go into more depth on
-[Applicative](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html)
-in a future post, for now just think of a
+A
 [Functor](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor.html)
-as
-something you can map over (a list is a _Functor_) and an _Applicative Functor_ as something
-that you can sequence functions through. Lists give a nice example comparing the two. Let's
+is
+something you can map over (a list is a _Functor_) and an 
+[Applicative](https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Applicative.html)
+ (or _Appplicative Functor_) is something
+that you can sequence functions through. For a more in depth description see 
+[Learn You A Haskell: Functors, Applicative Functors and Monoids](http://learnyouahaskell.com/functors-applicative-functors-and-monoids).
+Lists give a nice example comparing the two. Let's
 say I have a list of `[1,2]` and want to add `1` to each element. List is a `Functor` so I can
 use `fmap`:
 
