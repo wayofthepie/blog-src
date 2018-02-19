@@ -454,7 +454,7 @@ With a heap issue, if we hit an out of memory error with `Java Heap Space` as th
 immediately that the cause is the heap and we are either allocating too much, or we need to increase 
 the heap (actually identifying the underlying cause of this overallocation in the code is another issue...). 
 When the OOM killer kills our process, it's not so straightforward - it could be direct buffers,
-unconstrained heap memory areas (_Metaspace_, Code cache etc...) or even another process within the container.
+unconstrained non-heap memory areas (_Metaspace_, Code cache etc...) or even another process within the container.
 There is quite a bit to cover when investigating. On that note, I'll finish this post.
 
 # Conclusion
