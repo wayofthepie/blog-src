@@ -6,8 +6,10 @@ tags: jvm,container
 # Introduction
 The last post focused on the high level organization of memory within the JVM, 
 both heap and non-heap. This post will be more practical, we'll build a basic
-spring boot app and run through some pitfalls when bounding memory withing 
-containers with a focus on how memory is mapped in the OS.
+spring boot app and run through some pitfalls when bounding memory within 
+containers with a focus on how memory is mapped in the OS. I could have just
+used another Hello World program, but I think using a Spring Boot app
+is more representative of a real application.
 
 # Basic Spring Boot application
 You can generate an application from the [Spring Initializr](https://start.spring.io/) website.
@@ -70,6 +72,7 @@ dependencies {
 Rebuild with `./gradlew build` to pull in this dependency. We can now create a basic rest endpoint:
 
 ```java
+// src/java/com/bootmem/springbootmem/HelloWorldController.java
 package com.bootmem.springbootmem;
 
 import org.springframework.stereotype.Controller;
@@ -99,7 +102,7 @@ Hello world!
 In the rest of this post I will use `java -jar` directly to launch the application. 
 That's the basic setup done. Now, time to dive in.
 
-# Spring Boot memory usage
+# Application memory usage
 So how much memory does our application use, seeing as we have not given it any 
 bounds:
 
@@ -115,8 +118,8 @@ chaospie 22399 26.2  1.7 8220248 289912 pts/11 Sl   15:01   0:10 java -jar build
 
 So the process uses 289MB `RSS`. We know from the last post this is not the full story, `RSS`
 only shows memory _currently_ resident in physical memory for this process. Lets take
-a deeper look with Native Memory Tracking (NMT) - don't forget to kill the existing application instance,
-you can use `kill -9 %1` if it is the first job in the jobs list:
+a deeper look with Native Memory Tracking (NMT) (don't forget to kill the existing application instance,
+you can use `kill -9 %1` if it is the first job in the jobs list):
 
 ```bash
 $ nohup java -jar build/libs/spring-boot-mem-0.0.1-SNAPSHOT.jar &
@@ -182,6 +185,121 @@ Total: reserved=5632502KB, committed=542902KB
 ```
 See the total committed, 542902KB! This is about 240MB bigger than the reported `RSS`, 
 why is there such a difference? To understand this, we're going to have to dive into
-linux memory management, specifically the `mmap` system call.
+linux memory management and the syscalls that enable this.
 
-## The JVM and mmap
+## Memory allocation
+For this you're going to need `strace` installed, to allow us to trace system calls 
+within our JVM process. First, what happens when the JVM is initialized, what does it 
+do to reserve memory?
+
+```shell
+$ strace -e trace=memory -f -o out java -jar build/libs/spring-boot-mem-0.0.1-SNAPSHOT.jar
+# Ctrl+C to kill once the app has booted
+
+$ head out
+26792 brk(NULL)                         = 0x63d000
+26792 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fd41bca9000
+26792 mmap(NULL, 2155416, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fd41b876000
+26792 mprotect(0x7fd41b883000, 2097152, PROT_NONE) = 0
+26792 mmap(0x7fd41ba83000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xd000) = 0x7fd41ba83000
+26792 mmap(NULL, 108033, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fd41bc8e000
+26792 mmap(NULL, 3971488, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fd41b4ac000
+26792 mprotect(0x7fd41b66c000, 2097152, PROT_NONE) = 0
+26792 mmap(0x7fd41b86c000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1c0000) = 0x7fd41b86c000
+26792 mmap(0x7fd41b872000, 14752, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7fd41b872000
+...
+```
+The flags passed to `strace` do the following:
+
+  * **-e trace=memory** trace memory related system calls.
+  * __-f__ print details about child processes, this includes threads.
+  * __-o out__ write the information to a file called `out`.
+  * The rest is the command we want to run `java -jar ...`.
+
+Running this, and waiting for our app to be live, there will be thousands of memory related syscalls.
+Going through them, or even the code that causes them to happen, is beyond this post, however
+we can simulate this to get a better understanding. Before we do that, lets get the types of syscalls 
+used when tracing for memory:
+
+```bash
+$ strace -c -e trace=memory -f -o out java -jar build/libs/spring-boot-mem-0.0.1-SNAPSHOT.jar
+# Ctrl+C to kill once the app has booted
+
+$ cat out 
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 71.00    0.004769           1      6603           mprotect
+ 24.49    0.001645           2       667           mmap
+  4.09    0.000275           4        65           munmap
+  0.25    0.000017           6         3           brk
+  0.16    0.000011           0        28           madvise
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.006717                  7366           total
+```
+
+  * _mprotect_ - change protection for this processes memory pages.
+  * _mmap_ - create a mapping on the virtual address space [^vaddr] for this process.
+  * _munmap_ - delete mappings in the specified address ranges.
+  * _brk_ - changes the amount of memory available to the process.
+  * _madvise_ - give advice to the kernel about the given address range.
+
+
+## Mapping some memory
+It's time to dive into some `C`! Lets create a program which maps 1GiB of memory.
+
+```c
+// allocate.c
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/mman.h>
+
+int main(void) {
+    size_t mmapLen = 1073741824;
+    char *ptr = (char*) mmap(
+        NULL // address
+        , mmapLen // length of the mapping
+        , PROT_READ|PROT_WRITE // protection applied to the mapping
+        , MAP_PRIVATE|MAP_ANONYMOUS // flags
+        , -1 // file descriptor
+        , 0 // offset
+    );
+    
+    if(ptr == MAP_FAILED) {
+        perror("mmap");
+        exit(EXIT_FAILURE);
+    }
+
+    sleep(100);
+
+    return 0;
+}
+
+```
+Now compile and run:
+
+```bash
+$ gcc allocate.c -o allocate
+$ nohup ./allocate &
+$ ps aux | awk 'NR==1; /\.\/[a]lloc/'
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+chaospie 24479  0.0  0.0 1052796  648 pts/21   S    11:10   0:00 ./allocate
+```
+Notice `RSS` is only 648 KiB. Why? To answer that, we first need to understand the `mmap` syscall.
+
+## mmap
+The signature for the `mmap` syscall is as follows (note you can see this with `man mmap`):
+
+```c
+void *mmap(void *addr, size_t length, int prot, int flags,
+                  int fd, off_t offset);
+```
+What does our call was `mmap(NULL, mmapLen , PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);`, what does this do exactly?
+In order of args left to right:
+
+  * __NULL__ - this lets the _kernel_ chose the address to create the mapping.
+  * __mmapLen__ - we defined this as `size_t mmapLen = 1073741824;` which is 1GiB, this is the size of the mapping.
+  * __PROT_READ | PROT_WRITE__ - this mapping is readable and writeable.
+  * __MAP_PRIVATE | MAP_ANONYMOUS__ -  
+
+[^vaddr]: See [Process Address Space](https://www.kernel.org/doc/gorman/html/understand/understand007.html).
